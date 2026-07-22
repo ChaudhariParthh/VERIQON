@@ -1,0 +1,6 @@
+{
+  "name": "Veriqon AI",
+  "description": "Trust Every Decision. A decision-verification AI chat interface.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

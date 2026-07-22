@@ -1,0 +1,202 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-bg: var(--bg);
+  --color-sidebar: var(--sidebar);
+  --color-surface: var(--surface);
+  --color-card: var(--card);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+
+  --color-surface-hover: var(--hover-surface);
+  --color-surface-active: var(--active-surface);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-active: var(--primary-active);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-secondary-active: var(--secondary-active);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-active: var(--accent-active);
+}
+
+:root {
+  /* Default: Dark Theme */
+  --bg: #0B1020;
+  --sidebar: #11182D;
+  --surface: #161B2E;
+  --card: #1F2842;
+  --primary: #5B8CFF;
+  --secondary: #8B5CF6;
+  --accent: #22D3EE;
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --error: #EF4444;
+  --text: #F8FAFC;
+  --muted: #94A3B8;
+  --border: #2E3A58;
+
+  /* Interactive States (Dark default) */
+  --hover-surface: #222B45;
+  --active-surface: #2A3554;
+  --primary-hover: #6A97FF;
+  --primary-active: #4A7EFF;
+  --secondary-hover: #9D70FF;
+  --secondary-active: #7A49F4;
+  --accent-hover: #36DDF7;
+  --accent-active: #15BFD8;
+}
+
+.light {
+  --bg: #F8FAFC;
+  --sidebar: #E2E8F0;
+  --surface: #FFFFFF;
+  --card: #F1F5F9;
+  --primary: #2563EB;
+  --secondary: #7C3AED;
+  --accent: #0891B2;
+  --success: #16A34A;
+  --warning: #D97706;
+  --error: #DC2626;
+  --text: #0F172A;
+  --muted: #64748B;
+  --border: #CBD5E1;
+
+  /* Interactive States (Light) */
+  --hover-surface: #E2E8F0;
+  --active-surface: #CBD5E1;
+  --primary-hover: #1D4ED8;
+  --primary-active: #1E40AF;
+  --secondary-hover: #6D28D9;
+  --secondary-active: #5B21B6;
+  --accent-hover: #0E7490;
+  --accent-active: #155E75;
+}
+
+.dark {
+  --bg: #0B1020;
+  --sidebar: #11182D;
+  --surface: #161B2E;
+  --card: #1F2842;
+  --primary: #5B8CFF;
+  --secondary: #8B5CF6;
+  --accent: #22D3EE;
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --error: #EF4444;
+  --text: #F8FAFC;
+  --muted: #94A3B8;
+  --border: #2E3A58;
+
+  /* Interactive States (Dark) */
+  --hover-surface: #222B45;
+  --active-surface: #2A3554;
+  --primary-hover: #6A97FF;
+  --primary-active: #4A7EFF;
+  --secondary-hover: #9D70FF;
+  --secondary-active: #7A49F4;
+  --accent-hover: #36DDF7;
+  --accent-active: #15BFD8;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 14px;
+}
+
+/* Horizontal scrollbar custom scroll styling */
+.custom-scrollbar::-webkit-scrollbar {
+  height: 4px;
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* Markdown styling inside chat responses */
+.markdown-body h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: var(--text);
+}
+.markdown-body h2 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-top: 0.8rem;
+  margin-bottom: 0.4rem;
+  color: var(--text);
+}
+.markdown-body h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-top: 0.6rem;
+  margin-bottom: 0.3rem;
+  color: var(--text);
+}
+.markdown-body p {
+  margin-bottom: 0.6rem;
+  line-height: 1.5;
+}
+.markdown-body ul, .markdown-body ol {
+  margin-left: 1.25rem;
+  margin-bottom: 0.6rem;
+  list-style-type: decimal;
+}
+.markdown-body ul {
+  list-style-type: disc;
+}
+.markdown-body li {
+  margin-bottom: 0.25rem;
+}
+.markdown-body code {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.85rem;
+  background-color: var(--surface);
+  padding: 0.15rem 0.3rem;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+.markdown-body pre {
+  background-color: var(--surface);
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  overflow-x: auto;
+  margin-bottom: 0.6rem;
+}
+.markdown-body pre code {
+  background-color: transparent;
+  padding: 0;
+  border: none;
+}
+.markdown-body a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+.markdown-body blockquote {
+  border-left: 3px solid var(--primary);
+  padding-left: 0.75rem;
+  color: var(--muted);
+  font-style: italic;
+  margin-bottom: 0.6rem;
+}
