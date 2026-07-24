@@ -86,8 +86,20 @@ Launch the self-contained production server:
 npm run start
 ```
 The server will boot and serve the pre-built React frontend and proxy backend endpoints seamlessly from port `3000`.
+show tags and then image 
+---<img width="376" height="338" alt="modes" src="https://github.com/user-attachments/assets/5de58f9b-aaef-46c6-87a9-acf908945a7a" />
+<img width="112" height="102" alt="logo" src="https://github.com/user-attachments/assets/4cba3739-f54f-42c9-8343-e892c42be13b" />
+<img width="282" height="265" alt="Screenshot 2026-07-24 202210" src="https://github.com/user-attachments/assets/f32e1bf2-4837-481b-bb3d-fddd25a950cd" />
+<img width="940" height="405" alt="Screenshot 2026-07-24 202536" src="https://github.com/user-attachments/assets/e0446296-5fb4-4322-9550-291999da0111" />
+<img width="1387" height="743" alt="decision-audit-mode" src="https://github.com/user-attachments/assets/e937db38-d6fb-424d-a5c9-9876a11b3890" />
+<img width="1917" height="882" alt="overall-interface" src="https://github.com/user-attachments/assets/0a0f7521-fc06-4879-b1b4-92a0062dadc3" />
+<img width="372" height="893" alt="select-and-delete-feature" src="https://github.com/user-attachments/assets/c5bd823f-1aa1-4853-9188-b62035f7295b" />
+<img width="1917" height="891" alt="day-interface" src="https://github.com/user-attachments/assets/a8ad91ba-253b-4e99-9547-18ea6aa15134" />
+<img width="1917" height="881" alt="night-interface" src="https://github.com/user-attachments/assets/32527d7a-93ba-407c-b8c0-058d07e856de" />
+<img width="580" height="413" alt="sharable-format" src="https://github.com/user-attachments/assets/94951688-a89f-4921-90a0-bdd8efbdc313" />
 
----
+
+
 
 ## 🔒 Security & Privacy Architecture
 - **Server-Side API Proxying**: The client never communicates directly with Google's API endpoints, protecting your `GEMINI_API_KEY` from exposure in the browser.
