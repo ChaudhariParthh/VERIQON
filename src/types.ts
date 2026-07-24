@@ -26,6 +26,14 @@ export interface DecisionVerification {
   angles: VerificationAngles;
 }
 
+export interface IntentClassification {
+  category: string;
+  confidence: number;
+  explanation: string;
+  tailoredStyle: string;
+  humanized: boolean;
+}
+
 export interface Message {
   id: string;
   role: "user" | "assistant";
@@ -34,6 +42,7 @@ export interface Message {
   decision?: DecisionVerification;
   mode?: "standard" | "audit" | "deep_search";
   routingTrigger?: "auto" | "manual";
+  intentClassification?: IntentClassification;
   refinement?: {
     initialDraft: string;
     criticFeedback: string;

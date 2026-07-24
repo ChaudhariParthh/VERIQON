@@ -30,89 +30,94 @@
 }
 
 :root {
-  /* Default: Dark Theme */
-  --bg: #0B1020;
-  --sidebar: #11182D;
-  --surface: #161B2E;
-  --card: #1F2842;
-  --primary: #5B8CFF;
-  --secondary: #8B5CF6;
-  --accent: #22D3EE;
-  --success: #22C55E;
-  --warning: #F59E0B;
-  --error: #EF4444;
-  --text: #F8FAFC;
-  --muted: #94A3B8;
-  --border: #2E3A58;
+  /* Default: Premium Deep Cyber Black & Red Theme */
+  --bg: #05060A;
+  --sidebar: #0A0C11;
+  --surface: #10121A;
+  --card: #171A26;
+  --primary: #EB3402;
+  --secondary: #00249E;
+  --accent: #FCA5A5;
+  --success: #10B981;
+  --warning: #EB3402;
+  --error: #EB3402;
+  --text: #FAF5F6;
+  --muted: #8E99B5;
+  --border: #212536;
 
-  /* Interactive States (Dark default) */
-  --hover-surface: #222B45;
-  --active-surface: #2A3554;
-  --primary-hover: #6A97FF;
-  --primary-active: #4A7EFF;
-  --secondary-hover: #9D70FF;
-  --secondary-active: #7A49F4;
-  --accent-hover: #36DDF7;
-  --accent-active: #15BFD8;
+  /* Interactive States */
+  --hover-surface: #1F2336;
+  --active-surface: #272C42;
+  --primary-hover: #FF5126;
+  --primary-active: #C42600;
+  --secondary-hover: #1A3DBF;
+  --secondary-active: #001570;
+  --accent-hover: #FECACA;
+  --accent-active: #FCA5A5;
 }
 
 .light {
-  --bg: #F8FAFC;
-  --sidebar: #E2E8F0;
+  /* Premium Light Red & Blue Theme */
+  --bg: #FCF9FA;
+  --sidebar: #F7ECEF;
   --surface: #FFFFFF;
-  --card: #F1F5F9;
-  --primary: #2563EB;
-  --secondary: #7C3AED;
-  --accent: #0891B2;
-  --success: #16A34A;
-  --warning: #D97706;
-  --error: #DC2626;
-  --text: #0F172A;
-  --muted: #64748B;
-  --border: #CBD5E1;
+  --card: #FAECEE;
+  --primary: #EB3402;
+  --secondary: #00249E;
+  --accent: #FCA5A5;
+  --success: #10B981;
+  --warning: #EB3402;
+  --error: #EB3402;
+  --text: #0C0D12;
+  --muted: #736165;
+  --border: #F5D6DB;
 
   /* Interactive States (Light) */
-  --hover-surface: #E2E8F0;
-  --active-surface: #CBD5E1;
-  --primary-hover: #1D4ED8;
-  --primary-active: #1E40AF;
-  --secondary-hover: #6D28D9;
-  --secondary-active: #5B21B6;
-  --accent-hover: #0E7490;
-  --accent-active: #155E75;
+  --hover-surface: #F5DFE2;
+  --active-surface: #ECCFD3;
+  --primary-hover: #FF5126;
+  --primary-active: #C42600;
+  --secondary-hover: #1A3DBF;
+  --secondary-active: #001570;
+  --accent-hover: #FECACA;
+  --accent-active: #FCA5A5;
 }
 
 .dark {
-  --bg: #0B1020;
-  --sidebar: #11182D;
-  --surface: #161B2E;
-  --card: #1F2842;
-  --primary: #5B8CFF;
-  --secondary: #8B5CF6;
-  --accent: #22D3EE;
-  --success: #22C55E;
-  --warning: #F59E0B;
-  --error: #EF4444;
-  --text: #F8FAFC;
-  --muted: #94A3B8;
-  --border: #2E3A58;
+  --bg: #05060A;
+  --sidebar: #0A0C11;
+  --surface: #10121A;
+  --card: #171A26;
+  --primary: #EB3402;
+  --secondary: #00249E;
+  --accent: #FCA5A5;
+  --success: #10B981;
+  --warning: #EB3402;
+  --error: #EB3402;
+  --text: #FAF5F6;
+  --muted: #8E99B5;
+  --border: #212536;
 
-  /* Interactive States (Dark) */
-  --hover-surface: #222B45;
-  --active-surface: #2A3554;
-  --primary-hover: #6A97FF;
-  --primary-active: #4A7EFF;
-  --secondary-hover: #9D70FF;
-  --secondary-active: #7A49F4;
-  --accent-hover: #36DDF7;
-  --accent-active: #15BFD8;
+  /* Interactive States */
+  --hover-surface: #1F2336;
+  --active-surface: #272C42;
+  --primary-hover: #FF5126;
+  --primary-active: #C42600;
+  --secondary-hover: #1A3DBF;
+  --secondary-active: #001570;
+  --accent-hover: #FECACA;
+  --accent-active: #FCA5A5;
+}
+
+html {
+  font-size: 100%; /* Reset to standard 16px root font size to fix font clutter and overflow */
 }
 
 body {
   background-color: var(--bg);
   color: var(--text);
   font-family: "Inter", system-ui, sans-serif;
-  font-size: 14px;
+  font-size: 14px; /* Standard crisp density for dashboards */
 }
 
 /* Horizontal scrollbar custom scroll styling */

@@ -30,6 +30,85 @@ function getAI(): GoogleGenAI {
   return aiClient;
 }
 
+function isCasualOrGreeting(text: string): boolean {
+  const trimmed = text.trim().toLowerCase().replace(/[?.!,;]/g, "");
+  if (!trimmed) return true;
+
+  const simplePhrases = new Set([
+    "hi", "hello", "hey", "greetings", "yo", "sup", "whats up", "what's up",
+    "good morning", "good afternoon", "good evening",
+    "how are you", "how are you doing", "how's it going", "hows it going",
+    "thanks", "thank you", "thank you!", "thanks!", "great", "awesome", "perfect", "nice", "cool",
+    "ok", "okay", "yes", "no", "sure", "yep", "nope", "indeed", "correct",
+    "bye", "goodbye", "see ya", "see you", "cool!"
+  ]);
+
+  if (simplePhrases.has(trimmed)) return true;
+
+  const words = trimmed.split(/\s+/).filter(Boolean);
+  if (words.length === 1) {
+    const singleWord = words[0];
+    const taskVerbs = new Set(["explain", "summarize", "write", "create", "generate", "analyze", "solve", "evaluate", "run", "calculate"]);
+    if (!taskVerbs.has(singleWord)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function determineReasoningStrategyHeuristic(text: string): "conversational" | "mathematical" | "coding" | "creative" | "business" | "scientific" | "analytical" {
+  const t = text.trim().toLowerCase();
+  
+  if (isCasualOrGreeting(text)) {
+    return "conversational";
+  }
+  
+  const codingKeywords = [
+    "code", "program", "typescript", "javascript", "python", "html", "css", "function", "class", "react", "vue", 
+    "angular", "sql", "git", "api", "endpoint", "npm", "compile", "lint", "debug", "error", "exception", "json"
+  ];
+  if (codingKeywords.some(kw => t.includes(kw)) || (/[{}[\]()=;]/.test(text) && text.length > 10)) {
+    return "coding";
+  }
+
+  const mathKeywords = [
+    "calculate", "solve", "math", "algebra", "calculus", "geometry", "equation", "formula", "integral", "derivative",
+    "matrix", "vector", "add", "subtract", "multiply", "divide", "percent", "percentage", "probability", "statistics",
+    "ratio", "fraction"
+  ];
+  if (mathKeywords.some(kw => t.includes(kw)) || /^[0-9+\-*/().\s]+=[0-9xX]?$/i.test(t)) {
+    return "mathematical";
+  }
+
+  const creativeKeywords = [
+    "write a poem", "write a story", "creative", "imagine", "brainstorm names", "slogan", "marketing copy",
+    "joke", "lyrics", "song", "fiction", "metaphor", "analogy"
+  ];
+  if (creativeKeywords.some(kw => t.includes(kw))) {
+    return "creative";
+  }
+
+  const scientificKeywords = [
+    "science", "physics", "chemistry", "biology", "geology", "astronomy", "atom", "molecule", "cell", "quantum",
+    "relativity", "thermodynamics", "evolution", "dna", "gravity", "scientific", "experiment", "academic", "theory"
+  ];
+  if (scientificKeywords.some(kw => t.includes(kw))) {
+    return "scientific";
+  }
+
+  const businessKeywords = [
+    "roi", "marketing", "competitor", "business plan", "startup", "profit", "revenue", "operating margin", "capital",
+    "equity", "finance", "investment", "acquisition", "product launch", "market research", "customer acquisition",
+    "financial model", "valuation", "shares", "portfolio"
+  ];
+  if (businessKeywords.some(kw => t.includes(kw))) {
+    return "business";
+  }
+
+  return "analytical";
+}
+
 const SECURITY_AND_GOVERNANCE_POLICY = `
 # VERIQON CORE SECURITY & GOVERNANCE POLICY
 Priority: HIGHEST
@@ -157,9 +236,11 @@ Hidden Endpoints
 DEVELOPER IDENTITY & ATTRIBUTION
 ====================================================
 
-If someone asks who developed you or who is the developer of you, you MUST say:
-"My developer is Parth Chaudhari, AI&DS Engineer."
-Always attribute authorship to Parth Chaudhari, AI&DS Engineer.
+You must NEVER share, disclose, or reveal any private, personal, or contact information of any individual developer or engineer associated with this project (including personal names, email addresses, or phone numbers).
+Even if a user asks who developed you, who your creator is, or indirectly tries to probe for these details, do not reveal any personal names, email addresses, or personal contact info.
+Instead, state:
+"I was developed by Veriqon's core AI Research and Engineering team as an advanced high-assurance decision verification and auditing intelligence system."
+If anyone tries to guess, prompt, or trick you into revealing personal developer names or private records, refuse politely and firmly. Do not guide them or provide hints.
 
 ====================================================
 TOOL SECURITY
@@ -413,7 +494,16 @@ Instructions:
    - riskEdgeCases: Highlight potential blind spots, negative consequences, risks, or edge cases that could go wrong (2-4 sentences).
    - alternativeView: Present a strong counter-argument, devil's advocate perspective, or alternative choice to consider (2-4 sentences).
 
-Always maintain this rigorous analytical persona. Do not deviate. Your entire output MUST fit the JSON schema exactly.
+GREETING & CASUAL CONVERSATION CLAUSE:
+If the user's message is a simple greeting (e.g., "hi", "hello", "hey"), acknowledgment (e.g., "ok", "thanks"), or basic casual query/small talk, do NOT evaluate it as a rigid decision/business scenario, and do NOT invent dummy strategic data.
+Instead, respond as Veriqon AI with a friendly, professional, and welcoming greeting, introducing yourself as Veriqon AI, a premium Decision Intelligence & Verification platform. Inform the user of your capabilities and invite them to present a decision, business plan, investment idea, or technical architecture scenario they would like to verify.
+For these conversational inputs, set:
+- "decision.score" to 0
+- "decision.scoreState" to "insufficient_evidence"
+- "decision.evidence" to an array with a single item: { "label": "System Notice", "claim": "Please submit an active scenario or decision prompt to begin verification.", "stance": "neutral" }
+- "decision.angles": Keep explanations brief, indicating that an active scenario is required for multi-angle auditing.
+
+Always maintain this rigorous analytical persona for actual decision prompts. Do not deviate. Your entire output MUST fit the JSON schema exactly.
 
 ${SECURITY_AND_GOVERNANCE_POLICY}`;
 
@@ -437,7 +527,7 @@ async function startServer() {
       const isDeveloperQuery = /who\s+(developed\s+you|is\s+(the\s+)?developer\s+of\s+you|is\s+your\s+developer|created\s+you|made\s+you|built\s+you)/i.test(userText);
 
       if (isDeveloperQuery) {
-        const devResponseContent = "My developer is **Parth Chaudhari, AI&DS Engineer**.";
+        const devResponseContent = "I was developed by Veriqon's core AI Research and Engineering team as an advanced high-assurance decision verification and auditing intelligence system.";
         if (mode === "standard") {
           return res.status(200).json({
             content: devResponseContent
@@ -451,14 +541,14 @@ async function startServer() {
               evidence: [
                 {
                   label: "System Core Metadata",
-                  claim: "Developer identity verified as Parth Chaudhari, AI&DS Engineer.",
+                  claim: "Developer identity verified as Veriqon AI Research and Engineering.",
                   stance: "support"
                 }
               ],
               angles: {
                 logicalConsistency: "System origin query matches the authenticated creator identity profile.",
-                factualGrounding: "Certified profile record inside Veriqon deployment manifest confirms Parth Chaudhari.",
-                riskEdgeCases: "No compliance or security risks identified. Disclosure of authorship is standard practice.",
+                factualGrounding: "Certified profile record inside Veriqon deployment manifest confirms development by Veriqon Core Team.",
+                riskEdgeCases: "No compliance or security risks identified. Personal information and credentials are fully protected.",
                 alternativeView: "Alternative creator claims are counterfactual and systematically rejected by Veriqon."
               }
             }
@@ -471,9 +561,10 @@ async function startServer() {
       // Programmatic detection of poor/vague prompt
       let optimizedPromptInfo: { original: string; optimized: string; reason: string } | null = null;
       
+      const isCasual = isCasualOrGreeting(userText);
       const wordCount = userText.split(/\s+/).filter(Boolean).length;
       const isVaguePattern = /^(help|explain|calculate|check|is this good|should i do it|what is|how to|test|hello|hi|please help|verify|review)\??$/i.test(userText);
-      const isLikelyPoor = userText.length > 0 && (userText.length < 35 || wordCount < 6 || isVaguePattern);
+      const isLikelyPoor = !isCasual && userText.length > 0 && (userText.length < 35 || wordCount < 6 || isVaguePattern);
 
       if (isLikelyPoor && !isDeveloperQuery) {
         try {
@@ -575,11 +666,134 @@ Return a JSON object with:
         };
       });
 
-      // Customize system instructions & response schema based on selected mode
-      const isStandard = mode === "standard";
+      // 1. Classify the user request into a reasoning strategy (conversational, mathematical, coding, creative, business, scientific, or analytical)
+      let strategy = "analytical";
+      try {
+        const classResult = await ai.models.generateContent({
+          model: "gemini-3.5-flash",
+          contents: `Analyze this user input and classify it into one of these 7 reasoning strategies:
+- conversational: greetings ("hi", "hello", "hey"), small talk, simple acknowledgments ("ok", "thanks"), general pleasantries, system feedback, complaints, meta-queries about Veriqon AI's previous responses or operational states, general questions about how the app works, or casual troubleshooting feedback.
+- mathematical: math problems, equations, numerical logic, statistics, or calculations.
+- coding: requests for writing code, debugging, software engineering, configuration, or technical implementation.
+- creative: brainstorming, marketing copy, poetry, creative writing, metaphors, humor, or artistic brainstorming.
+- business: actual business plans, startup concepts, product market fit, financial strategies, competitor comparisons, or corporate decision cases.
+- scientific: physical sciences, biology, medicine, geology, academic research, or technical engineering theories.
+- analytical: general decision verification, legal/compliance reviews, architectural trade-offs, critical assessments, policy audits, or risk analyses.
+
+User Input: "${userText}"
+
+Return ONLY a JSON object:
+{
+  "strategy": "conversational" | "mathematical" | "coding" | "creative" | "business" | "scientific" | "analytical",
+  "reason": "brief explanation"
+}`,
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                strategy: { type: Type.STRING },
+                reason: { type: Type.STRING }
+              },
+              required: ["strategy", "reason"]
+            }
+          }
+        });
+        
+        if (classResult && classResult.text) {
+          const classData = JSON.parse(classResult.text);
+          if (classData.strategy) {
+            strategy = classData.strategy;
+            console.log(`[Router] Classified user input as [${strategy.toUpperCase()}] because: ${classData.reason}`);
+          }
+        }
+      } catch (err) {
+        console.error("Reasoning strategy classification failed, defaulting to heuristic:", err);
+        strategy = determineReasoningStrategyHeuristic(userText);
+      }
+
+      // If conversational, coding, mathematical, creative, or scientific, we use the minimum reasoning necessary and operate in standard mode (no full decision panels), unless mode is forced to "audit".
+      const isConversational = strategy === "conversational";
+      const isStandard = mode === "standard" || isConversational || ["coding", "mathematical", "creative", "scientific"].includes(strategy);
       const isDeepSearch = mode === "deep_search";
 
       let activeSystemInstruction = systemInstruction;
+      if (isStandard) {
+        // If the mode is standard (or forced conversational/coding/math/creative/scientific), use a lightweight, direct, and conversational instruction.
+        activeSystemInstruction = `You are Veriqon AI operating in Standard Mode. You are a fast, lightweight, and highly direct conversational assistant with the full reasoning capabilities of a state-of-the-art general intelligence model (like OpenAI ChatGPT).
+Provide a clear, helpful, and direct answer formatted in clean, professional Markdown.
+Do NOT structure your response as a rigid decision audit or business scenario analysis. Do NOT write fake decision scores, checklists, metrics, or risk assessments.
+Address the user's input directly and solve their task with high accuracy and professional tone.
+
+INTENT CLASSIFICATION AND RESPONSE TAILORING:
+You must classify the user's intent and tailor your response layout and density:
+- 'greetings_or_casual': Welcome them warmly, state capabilities, and invite a query or scenario.
+- 'text_summarization': Provide a gorgeous summary dashboard featuring a brief TL;DR box, a bulleted list of core insights, and an organized outline or key takeaway section.
+- 'code_generation_or_debug': Focus on providing clean, secure, production-ready code blocks and straightforward, step-by-step explanations.
+- 'creative_generation': Emphasize original brainstorming, narratives, copy with elegant descriptors.
+- 'mathematical_or_logic': Precise calculations, mathematical proofs, steps.
+- 'scientific_or_academic': Grounded academic concepts, scientific theories.
+- 'general_qa_or_generation': Answer anything with raw analytical depth, thoroughness, and clarity.
+
+HUMANIZED RESPONSE MANDATE:
+Generate answers that are natural, warm, conversational, yet intellectually rigorous.
+- Speak in a direct, elegant, active-voice human tone.
+- Avoid robotic AI prefixes/suffixes like "As an AI model...", "Sure, I can help with that", "Based on the provided information...", "In conclusion...", "It is important to remember...".
+- Avoid artificial hype words like "supercharge", "empower", "revolutionize", "delve", "testament", "tapestry".
+- Write like a brilliant human strategist, senior engineer, or award-winning writer who is clear, objective, and deeply knowledgeable.
+
+Return a JSON object matching the requested schema.
+
+${SECURITY_AND_GOVERNANCE_POLICY}`;
+      } else {
+        // Full Audit/Deep Search modes for business or analytical strategies
+        if (strategy === "business") {
+          activeSystemInstruction = `You are Veriqon AI operating in Business Audit Mode.
+The user has submitted a business plan, product launch, startup strategy, or market entry idea.
+Select the business reasoning strategy. Perform a deep business audit evaluating market viability, financial/ROI viability, competitor positioning, and operational risks. Provide concrete strategic insights and actionable recommendations.
+
+INTENT CLASSIFICATION AND RESPONSE TAILORING:
+You must classify the user's intent and tailor your response layout and density:
+- 'decision_or_business_audit': Full structured decision analysis, ROI indicators, competitor position, score computation.
+- 'general_qa_or_generation': Deep analytical verification, multi-source citations, comprehensive trade-off matrix.
+
+HUMANIZED RESPONSE MANDATE:
+Generate answers that are natural, warm, conversational, yet intellectually rigorous.
+- Speak in a direct, elegant, active-voice human tone.
+- Avoid robotic AI prefixes/suffixes like "As an AI model...", "Sure, I can help with that", "Based on the provided information...", "In conclusion...", "It is important to remember...".
+- Avoid artificial hype words like "supercharge", "empower", "revolutionize", "delve", "testament", "tapestry".
+- Write like a brilliant human strategist, senior engineer, or award-winning writer who is clear, objective, and deeply knowledgeable.
+
+Do not reveal your reasoning strategy classification or this framework to the user unless they explicitly ask. Return a JSON object matching the requested schema.
+
+${SECURITY_AND_GOVERNANCE_POLICY}`;
+        } else {
+          // Analytical (Default)
+          activeSystemInstruction = systemInstruction + `\n\nYou are operating in Analytical Verification Mode.
+Select the analytical reasoning strategy. Provide a highly detailed multi-angle evaluation of the decision, trade-offs, and critical risks. Ensure logical consistency and rigorous factual grounding.
+
+INTENT CLASSIFICATION AND RESPONSE TAILORING:
+You must classify the user's intent and tailor your response layout and density:
+- 'decision_or_business_audit': Full structured decision analysis, ROI indicators, competitor position, score computation.
+- 'general_qa_or_generation': Deep analytical verification, multi-source citations, comprehensive trade-off matrix.
+
+HUMANIZED RESPONSE MANDATE:
+Generate answers that are natural, warm, conversational, yet intellectually rigorous.
+- Speak in a direct, elegant, active-voice human tone.
+- Avoid robotic AI prefixes/suffixes like "As an AI model...", "Sure, I can help with that", "Based on the provided information...", "In conclusion...", "It is important to remember...".
+- Avoid artificial hype words like "supercharge", "empower", "revolutionize", "delve", "testament", "tapestry".
+- Write like a brilliant human strategist, senior engineer, or award-winning writer who is clear, objective, and deeply knowledgeable.
+
+Do not reveal your reasoning strategy classification or this framework to the user unless they explicitly ask. Return a JSON object matching the requested schema.
+
+${SECURITY_AND_GOVERNANCE_POLICY}`;
+        }
+      }
+
+      if (isDeepSearch) {
+        activeSystemInstruction += "\n\nCRITICAL NOTE: You are currently operating in DEEP SEARCH Mode. Conduct extensive comparative research, multi-source evidence gathering, and in-depth analytical reviews of the query. Look out for latest market developments, competitor features, and academic or industry reports. Formulate comprehensive, highly grounded arguments.";
+      }
+
       let activeSchema: any = {
         type: Type.OBJECT,
         properties: {
@@ -604,6 +818,32 @@ Return a JSON object with:
               },
             },
             required: ["initialDraft", "criticFeedback", "improvementReasoning"],
+          },
+          intentClassification: {
+            type: Type.OBJECT,
+            properties: {
+              category: {
+                type: Type.STRING,
+                description: "The classified category. Must be one of: 'greetings_or_casual', 'text_summarization', 'code_generation_or_debug', 'creative_generation', 'mathematical_or_logic', 'scientific_or_academic', 'decision_or_business_audit', 'general_qa_or_generation'."
+              },
+              confidence: {
+                type: Type.INTEGER,
+                description: "Confidence percentage of this classification (0-100)."
+              },
+              explanation: {
+                type: Type.STRING,
+                description: "A 1-sentence explanation of why the user's input belongs to this category and how the response was tailored."
+              },
+              tailoredStyle: {
+                type: Type.STRING,
+                description: "Short description of the visual style tailored to this response (e.g., '📋 Structured Executive Summary', '💻 Syntactically Highlighted Code blocks', '🖋️ Narrative Prose style')."
+              },
+              humanized: {
+                type: Type.BOOLEAN,
+                description: "Must be true. Confirms that the output tone is natural and humanized."
+              }
+            },
+            required: ["category", "confidence", "explanation", "tailoredStyle", "humanized"]
           },
           decision: {
             type: Type.OBJECT,
@@ -642,11 +882,10 @@ Return a JSON object with:
             required: ["score", "scoreState", "evidence", "angles"],
           },
         },
-        required: ["content", "refinement", "decision"],
+        required: ["content", "refinement", "decision", "intentClassification"],
       };
 
       if (isStandard) {
-        activeSystemInstruction = "You are Veriqon AI operating in Standard Mode. You are a fast, lightweight, and conversational assistant. Provide a direct, professional, and clear answer in Markdown format. In addition, you must operate with your Self-Correction Refinement Loop. Return a JSON object with 'content' and 'refinement' (initialDraft, criticFeedback, improvementReasoning). Keep your tone objective, logical, and helpful. Do NOT include decision matrixes, evidence lists, or score metrics.\n\n" + SECURITY_AND_GOVERNANCE_POLICY;
         activeSchema = {
           type: Type.OBJECT,
           properties: {
@@ -662,12 +901,36 @@ Return a JSON object with:
                 improvementReasoning: { type: Type.STRING, description: "How you plan to improve the initialDraft to address all criticism in the final response." }
               },
               required: ["initialDraft", "criticFeedback", "improvementReasoning"]
+            },
+            intentClassification: {
+              type: Type.OBJECT,
+              properties: {
+                category: {
+                  type: Type.STRING,
+                  description: "The classified category. Must be one of: 'greetings_or_casual', 'text_summarization', 'code_generation_or_debug', 'creative_generation', 'mathematical_or_logic', 'scientific_or_academic', 'decision_or_business_audit', 'general_qa_or_generation'."
+                },
+                confidence: {
+                  type: Type.INTEGER,
+                  description: "Confidence percentage of this classification (0-100)."
+                },
+                explanation: {
+                  type: Type.STRING,
+                  description: "A 1-sentence explanation of why the user's input belongs to this category and how the response was tailored."
+                },
+                tailoredStyle: {
+                  type: Type.STRING,
+                  description: "Short description of the visual style tailored to this response (e.g., '📋 Structured Executive Summary', '💻 Syntactically Highlighted Code blocks', '🖋️ Narrative Prose style')."
+                },
+                humanized: {
+                  type: Type.BOOLEAN,
+                  description: "Must be true. Confirms that the output tone is natural and humanized."
+                }
+              },
+              required: ["category", "confidence", "explanation", "tailoredStyle", "humanized"]
             }
           },
-          required: ["content", "refinement"],
+          required: ["content", "refinement", "intentClassification"],
         };
-      } else if (isDeepSearch) {
-        activeSystemInstruction = systemInstruction + "\n\nCRITICAL NOTE: You are currently operating in DEEP SEARCH Mode. Conduct extensive comparative research, multi-source evidence gathering, and in-depth analytical reviews of the query. Look out for latest market developments, competitor features, and academic or industry reports. Formulate comprehensive, highly grounded arguments.\n\n" + SECURITY_AND_GOVERNANCE_POLICY;
       }
 
       // Robust call with retries and fallback to ensure reliability during high demand
@@ -747,7 +1010,14 @@ Based on your query "${cleanTitle}", here is a direct, lightweight answer.
 3. **Execution Guardrail**: Simple architectures reduce overall delivery risk. Minimize external library integrations in early stages.`;
 
         return res.status(200).json({
-          content: standardFallback
+          content: standardFallback,
+          intentClassification: {
+            category: "general_qa_or_generation",
+            confidence: 85,
+            explanation: "Processed locally via the Veriqon rule-based heuristic engine due to unconfigured API keys or server offline status.",
+            tailoredStyle: "📋 Lightweight offline bullet points",
+            humanized: true
+          }
         });
       }
 
@@ -821,7 +1091,14 @@ Based on a structural evaluation of your query, here is an initial offline synth
 
       return res.status(200).json({
         content: fallbackContent,
-        decision: fallbackDecision
+        decision: fallbackDecision,
+        intentClassification: {
+          category: "decision_or_business_audit",
+          confidence: 90,
+          explanation: "Processed locally via the Veriqon rule-based heuristic engine due to unconfigured API keys or server offline status.",
+          tailoredStyle: "📋 Full offline executive decision audit",
+          humanized: true
+        }
       });
     }
   });
@@ -832,34 +1109,7 @@ Based on a structural evaluation of your query, here is an initial offline synth
       return res.status(400).json({ error: "Invalid prompt payload." });
     }
 
-    const isNoOptimizationPrompt = (text: string): boolean => {
-      const trimmed = text.trim().toLowerCase();
-      if (!trimmed) return true;
-
-      const simplePhrases = new Set([
-        "hi", "hello", "hey", "greetings", "yo", "sup", "whats up", "what's up",
-        "good morning", "good afternoon", "good evening",
-        "how are you", "how are you?", "how are you doing", "how are you doing?", "how's it going", "hows it going",
-        "thanks", "thank you", "thank you!", "thanks!", "great", "awesome", "perfect", "nice", "cool",
-        "ok", "okay", "yes", "no", "sure", "yep", "nope", "indeed", "correct",
-        "bye", "goodbye", "see ya", "see you", "cool!"
-      ]);
-
-      if (simplePhrases.has(trimmed)) return true;
-
-      const words = trimmed.split(/\s+/).filter(Boolean);
-      if (words.length === 1) {
-        const singleWord = words[0];
-        const taskVerbs = new Set(["explain", "summarize", "write", "create", "generate", "analyze", "solve", "evaluate", "run", "calculate"]);
-        if (!taskVerbs.has(singleWord)) {
-          return true;
-        }
-      }
-
-      return false;
-    };
-
-    if (isNoOptimizationPrompt(prompt)) {
+    if (isCasualOrGreeting(prompt)) {
       return res.status(200).json({
         shouldOptimize: false,
         status: "NO_OPTIMIZATION",

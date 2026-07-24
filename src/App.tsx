@@ -54,14 +54,26 @@ import {
   Lock,
   Mail,
   Square,
-  Palette
+  Palette,
+  Layers,
+  UserCheck,
+  MessageSquare,
+  RefreshCw,
+  Code2,
+  PenTool,
+  Binary,
+  BookOpen,
+  Briefcase,
+  Cpu
 } from "lucide-react";
 
 import { Chat, Message, Attachment, Evidence, VerificationAngles } from "./types";
 import { DocumentWorkshop } from "./components/DocumentWorkshop";
+import { DECISION_TEMPLATES, createChatFromTemplate } from "./templates";
+import logoUrl from "./assets/images/logo.jpg";
 
 // Seed data to ensure Veriqon AI never loads with an empty chat screen
-const SEED_CHATS: Chat[] = [
+const ORIGINAL_SEED_CHATS: Chat[] = [
   {
     id: "q3-strategy",
     title: "Q3 Product Launch Strategy",
@@ -238,6 +250,11 @@ const SEED_CHATS: Chat[] = [
   }
 ];
 
+const SEED_CHATS: Chat[] = [
+  ...ORIGINAL_SEED_CHATS,
+  ...DECISION_TEMPLATES.map(t => createChatFromTemplate(t, false))
+];
+
 const getDetectedWorkshopFile = (content: string) => {
   if (!content) return null;
 
@@ -286,12 +303,9 @@ export default function App() {
   } | null>(null);
 
   // User Session & Authentication State
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
-    const saved = localStorage.getItem("veriqon_is_logged_in");
-    return saved !== "false"; // Default to true unless explicitly logged off
-  });
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
-  const [loginEmail, setLoginEmail] = useState("parthchaudhari974@gmail.com");
+  const [loginEmail, setLoginEmail] = useState("operator@veriqon.ai");
   const [loginPassword, setLoginPassword] = useState("password123");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loginError, setLoginError] = useState("");
@@ -314,7 +328,7 @@ export default function App() {
         // Fallback
       }
     }
-    return [{ email: "parthchaudhari974@gmail.com", password: "password123" }];
+    return [{ email: "operator@veriqon.ai", password: "password123" }];
   });
 
   // Simulated OAuth Popups State
@@ -424,6 +438,10 @@ export default function App() {
 
   // Expanded evidence state per message ID
   const [expandedEvidence, setExpandedEvidence] = useState<{ [key: string]: number | null }>({});
+  
+  // Collapsible sections per message ID (default to collapsed/false)
+  const [expandedFactualClaimsSections, setExpandedFactualClaimsSections] = useState<{ [key: string]: boolean }>({});
+  const [expandedMultiAngleSections, setExpandedMultiAngleSections] = useState<{ [key: string]: boolean }>({});
   
   // Multi-Angle selected tab state per message ID (defaults to 'logicalConsistency')
   const [activeTabs, setActiveTabs] = useState<{ [key: string]: keyof VerificationAngles }>({});
@@ -568,10 +586,18 @@ export default function App() {
       }
     }
 
-    // Set default seed data
-    setChats(SEED_CHATS);
-    setActiveChatId(SEED_CHATS[0].id);
-    localStorage.setItem("veriqon_chats", JSON.stringify(SEED_CHATS));
+    // Create a new empty tab/chat instead of fluff templates
+    const defaultChat: Chat = {
+      id: `chat-${Date.now()}`,
+      title: "New Tab",
+      pinned: false,
+      temporary: false,
+      createdAt: new Date().toISOString(),
+      messages: []
+    };
+    setChats([defaultChat]);
+    setActiveChatId(defaultChat.id);
+    localStorage.setItem("veriqon_chats", JSON.stringify([defaultChat]));
   }, []);
 
   // Sync to local storage
@@ -696,7 +722,7 @@ export default function App() {
       );
 
       // Also allow default user if registeredUsers fails to sync
-      const isDefaultUser = trimmedEmail === "parthchaudhari974@gmail.com" && loginPassword === "password123";
+      const isDefaultUser = trimmedEmail === "operator@veriqon.ai" && loginPassword === "password123";
 
       if (matchedUser || isDefaultUser) {
         setIsLoggedIn(true);
@@ -719,7 +745,7 @@ export default function App() {
         setActiveChatId(newId);
       } else {
         setIsLoggingIn(false);
-        setLoginError("Invalid email or password combination. Try parthchaudhari974@gmail.com / password123 or sign up.");
+        setLoginError("Invalid email or password combination. Try operator@veriqon.ai / password123 or sign up.");
       }
     }, 850);
   };
@@ -830,7 +856,7 @@ export default function App() {
   const handleNewChat = () => {
     const newChat: Chat = {
       id: `chat-${Date.now()}`,
-      title: isTemporary ? "Temporary Verification Session" : "New Decision Analysis",
+      title: isTemporary ? "Temporary Verification Session" : "New Tab",
       pinned: false,
       temporary: isTemporary,
       createdAt: new Date().toISOString(),
@@ -846,6 +872,16 @@ export default function App() {
       // Temporary chat stored only in component state, not saved to storage
       setChats(prev => [newChat, ...prev.filter(c => !c.temporary)]);
     }
+    setActiveChatId(newChat.id);
+    setSearch("");
+    setSidebarOpen(false);
+  };
+
+  // Create a new chat from a template
+  const handleSelectTemplate = (template: any) => {
+    const newChat = createChatFromTemplate(template);
+    const updated = [newChat, ...chats];
+    saveChats(updated);
     setActiveChatId(newChat.id);
     setSearch("");
     setSidebarOpen(false);
@@ -1726,8 +1762,8 @@ export default function App() {
           >
             {/* Top Logo / Brand */}
             <div className="flex flex-col items-center text-center mb-6">
-              <div className="w-12 h-12 rounded-xl bg-primary/15 border border-primary/20 flex items-center justify-center text-primary mb-3 shadow-[0_0_20px_rgba(37,99,235,0.15)]">
-                <Shield className="w-6 h-6 stroke-[2px]" />
+              <div className="w-20 h-20 rounded-2xl border border-border overflow-hidden mb-3 shadow-[0_0_25px_rgba(235,52,2,0.35)] bg-white flex items-center justify-center">
+                <img src={logoUrl} alt="Veriqon AI Logo" className="w-full h-full object-cover p-0 transition-transform duration-300 hover:scale-105" referrerPolicy="no-referrer" />
               </div>
               <h1 className="text-2xl font-bold tracking-tight text-text">Veriqon AI</h1>
               <p className="text-xs text-muted mt-1 uppercase tracking-wider font-semibold">Trust Every Decision</p>
@@ -1825,7 +1861,7 @@ export default function App() {
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       className="w-full pl-9 pr-3 py-2 bg-card border border-border rounded-xl text-xs text-text placeholder-muted focus:outline-none focus:border-primary/50 transition-all"
-                      placeholder="parthchaudhari974@gmail.com"
+                      placeholder="operator@veriqon.ai"
                     />
                   </div>
                 </div>
@@ -2168,7 +2204,7 @@ export default function App() {
                       </div>
                       <span className="text-xs font-bold text-success">Identity Successfully Verified!</span>
                       <p className="text-[10px] text-muted mt-1 max-w-xs">
-                        Welcome back, <span className="font-semibold text-text">parthchaudhari974@gmail.com</span>. Starting your new decision analysis session...
+                        Welcome back, <span className="font-semibold text-text">operator@veriqon.ai</span>. Starting your new decision analysis session...
                       </p>
                     </>
                   )}
@@ -2239,8 +2275,8 @@ export default function App() {
             <div className="p-4 flex flex-col gap-3 border-b border-border">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center text-primary">
-                    <Shield className="w-5 h-5" />
+                  <div className="w-12 h-12 rounded-xl border border-border overflow-hidden bg-white flex items-center justify-center shadow-sm shrink-0">
+                    <img src={logoUrl} alt="Veriqon AI Logo" className="w-full h-full object-cover p-0 transition-transform duration-300 hover:scale-105" referrerPolicy="no-referrer" />
                   </div>
                   <div>
                     <h1 className="font-bold tracking-tight text-md">Veriqon AI</h1>
@@ -2260,7 +2296,7 @@ export default function App() {
                 className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-lg transition-colors cursor-pointer text-sm"
               >
                 <Plus className="w-4 h-4 stroke-[3px]" />
-                New Verification Tab
+                New Tab
               </button>
             </div>
 
@@ -2270,7 +2306,7 @@ export default function App() {
                 <Search className="absolute left-3 w-4 h-4 text-muted" />
                 <input
                   type="text"
-                  placeholder="Search verification tabs..."
+                  placeholder="Search tabs..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full pl-9 pr-3 py-1.5 bg-card border border-border rounded-lg text-xs text-text placeholder-muted focus:outline-none focus:border-primary/50"
@@ -2356,7 +2392,7 @@ export default function App() {
 
             {/* Sidebar Tabs Header */}
             <div className="px-4 py-2 border-b border-border bg-sidebar/30 flex items-center justify-between text-[10px] font-bold text-muted uppercase tracking-wider">
-              <span>Active Verification Tabs</span>
+              <span>Active Tabs</span>
               <span className="bg-card/50 px-1.5 py-0.5 rounded border border-border tracking-normal normal-case">
                 {chats.length} open
               </span>
@@ -2524,26 +2560,19 @@ export default function App() {
               )}
             </div>
 
-            {/* User Session Profile & Log Off */}
+            {/* User Session Profile & Status */}
             <div className="p-4 border-t border-border bg-card/20 flex flex-col gap-3 shrink-0">
               <div className="flex items-center justify-between gap-2 bg-card/40 p-2 rounded-xl border border-border/50">
                 <div className="flex items-center gap-2 overflow-hidden">
-                  <div className="w-8 h-8 rounded-full bg-secondary/15 border border-secondary/25 flex items-center justify-center text-secondary font-bold text-xs shrink-0 select-none">
-                    P
+                  <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center text-primary font-bold text-xs shrink-0 select-none">
+                    OP
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="text-[11px] font-semibold text-text truncate">Parth Chaudhari</span>
-                    <span className="text-[9px] text-muted truncate">parthchaudhari974@gmail.com</span>
+                    <span className="text-[11px] font-semibold text-text truncate">System Operator</span>
+                    <span className="text-[9px] text-muted truncate">Active Session</span>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleLogOff}
-                  className="p-1.5 hover:bg-error/15 text-muted hover:text-error rounded-lg border border-transparent hover:border-error/20 transition-all cursor-pointer"
-                  title="Log Off"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                </button>
+                <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shrink-0 mr-1" title="Session Connected" />
               </div>
               
               <div className="text-[10px] text-muted flex flex-col gap-1">
@@ -2930,21 +2959,29 @@ export default function App() {
                           }`} />
 
                           {/* DYNAMIC ROUTING MODE STATUS INDICATOR */}
-                          <div className="absolute top-3 right-4 flex items-center gap-1.5 text-[9px] text-muted font-mono bg-surface/60 border border-border px-2 py-0.5 rounded-full select-none">
-                            <span className={`w-1.5 h-1.5 rounded-full ${
-                              message.mode === "standard" 
-                                ? "bg-primary" 
-                                : message.mode === "deep_search" 
-                                ? "bg-accent animate-pulse" 
-                                : "bg-secondary"
-                            }`} />
-                            <span>
-                              {message.routingTrigger === "manual" ? "Override" : "Auto"}
-                            </span>
-                            <span className="text-border">|</span>
-                            <span className="text-text font-semibold uppercase text-[8px] tracking-wider">
-                              {message.mode === "standard" ? "Standard AI" : message.mode === "deep_search" ? "Deep Search" : "Decision Audit"}
-                            </span>
+                          <div className="absolute top-3 right-4 flex items-center gap-2 select-none">
+                            {message.intentClassification && (
+                              <div className="hidden md:flex items-center gap-1 bg-primary/10 border border-primary/20 text-primary text-[9px] px-2.5 py-0.5 rounded-full font-semibold">
+                                <Sparkles className="w-2.5 h-2.5 text-primary" />
+                                <span>Auto Mode: {message.intentClassification.category.replace(/_/g, ' ')}</span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-1.5 text-[9px] text-muted font-mono bg-surface/60 border border-border px-2.5 py-0.5 rounded-full">
+                              <span className={`w-1.5 h-1.5 rounded-full ${
+                                message.mode === "standard" 
+                                  ? "bg-primary" 
+                                  : message.mode === "deep_search" 
+                                  ? "bg-accent animate-pulse" 
+                                  : "bg-secondary"
+                              }`} />
+                              <span>
+                                {message.routingTrigger === "manual" ? "Override" : "Auto"}
+                              </span>
+                              <span className="text-border">|</span>
+                              <span className="text-text font-semibold uppercase text-[8px] tracking-wider">
+                                {message.mode === "standard" ? "Standard AI" : message.mode === "deep_search" ? "Deep Search" : "Decision Audit"}
+                              </span>
+                            </div>
                           </div>
 
                           {/* CORE DECISION VERIFICATION BLOCK - MUST SIT ABOVE AI RESPONSE TEXT */}
@@ -3061,124 +3098,196 @@ export default function App() {
                               </div>
 
                               {/* 2. EVIDENCE MATRIX LIST */}
-                              <div>
-                                <div className="text-[10px] font-bold text-muted uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                                  <FileText className="w-3.5 h-3.5 text-secondary" />
-                                  Factual Claims & Supporting Evidence
-                                </div>
-                                <div className="flex flex-col gap-2">
-                                  {decision.evidence && decision.evidence.length > 0 ? (
-                                    decision.evidence.map((ev, index) => {
-                                      const isExpanded = expandedEvidence[message.id] === index;
-                                      return (
-                                        <div
-                                          key={index}
-                                          onClick={() => setExpandedEvidence(prev => ({
-                                            ...prev,
-                                            [message.id]: isExpanded ? null : index
-                                          }))}
-                                          className={`p-3 rounded-xl border cursor-pointer transition-all ${
-                                            isExpanded
-                                              ? "bg-card border-secondary/40 shadow-sm"
-                                              : "bg-card/40 border-border/50 hover:border-muted/50"
-                                          }`}
-                                        >
-                                          <div className="flex items-center justify-between gap-2">
-                                            <div className="flex items-center gap-2 min-w-0">
-                                              <span className="px-1.5 py-0.5 bg-surface border border-border/60 text-[8px] font-bold text-muted uppercase tracking-wider rounded truncate max-w-[120px]">
-                                                {ev.label}
-                                              </span>
-                                              <span className="text-xs font-semibold text-text truncate max-w-[200px] sm:max-w-md">
-                                                {ev.claim}
-                                              </span>
-                                            </div>
-                                            <div className="flex items-center gap-1 shrink-0">
-                                              <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider border ${
-                                                ev.stance === "support"
-                                                  ? "bg-success/10 border-success/30 text-success"
-                                                  : ev.stance === "contradict"
-                                                  ? "bg-error/10 border-error/30 text-error"
-                                                  : "bg-muted/10 border-muted/30 text-muted"
-                                              }`}>
-                                                {ev.stance}
-                                              </span>
-                                              <ChevronRight className={`w-3.5 h-3.5 text-muted/60 transition-transform ${isExpanded ? "rotate-90 text-secondary" : ""}`} />
-                                            </div>
+                              <div className="border border-border/40 rounded-xl overflow-hidden bg-card/10">
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedFactualClaimsSections(prev => ({
+                                    ...prev,
+                                    [message.id]: !prev[message.id]
+                                  }))}
+                                  className="w-full flex items-center justify-between p-3 bg-card/25 hover:bg-card/40 transition-colors text-left"
+                                >
+                                  <div className="text-[10px] font-bold text-muted uppercase tracking-wider flex items-center gap-1.5 select-none">
+                                    <FileText className="w-3.5 h-3.5 text-secondary" />
+                                    <span>Factual Claims & Supporting Evidence</span>
+                                    {decision.evidence && decision.evidence.length > 0 && (
+                                      <span className="ml-1.5 px-1.5 py-0.5 bg-secondary/15 text-secondary border border-secondary/20 rounded text-[8px] font-black font-mono">
+                                        {decision.evidence.length}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-[9px] text-muted font-medium mr-1 select-none">
+                                      {expandedFactualClaimsSections[message.id] ? "Collapse" : "Expand"}
+                                    </span>
+                                    {expandedFactualClaimsSections[message.id] ? (
+                                      <ChevronDown className="w-4 h-4 text-muted transition-transform" />
+                                    ) : (
+                                      <ChevronRight className="w-4 h-4 text-muted transition-transform" />
+                                    )}
+                                  </div>
+                                </button>
+                                
+                                <AnimatePresence initial={false}>
+                                  {expandedFactualClaimsSections[message.id] && (
+                                    <motion.div
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: "auto", opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      transition={{ duration: 0.2, ease: "easeInOut" }}
+                                      className="border-t border-border/30 p-3"
+                                    >
+                                      <div className="flex flex-col gap-2">
+                                        {decision.evidence && decision.evidence.length > 0 ? (
+                                          decision.evidence.map((ev, index) => {
+                                            const isExpanded = expandedEvidence[message.id] === index;
+                                            return (
+                                              <div
+                                                key={index}
+                                                onClick={() => setExpandedEvidence(prev => ({
+                                                  ...prev,
+                                                  [message.id]: isExpanded ? null : index
+                                                }))}
+                                                className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                                                  isExpanded
+                                                    ? "bg-card border-secondary/40 shadow-sm"
+                                                    : "bg-card/40 border-border/50 hover:border-muted/50"
+                                                }`}
+                                              >
+                                                <div className="flex items-center justify-between gap-2">
+                                                  <div className="flex items-center gap-2 min-w-0">
+                                                    <span className="px-1.5 py-0.5 bg-surface border border-border/60 text-[8px] font-bold text-muted uppercase tracking-wider rounded truncate max-w-[120px]">
+                                                      {ev.label}
+                                                    </span>
+                                                    <span className="text-xs font-semibold text-text truncate max-w-[200px] sm:max-w-md">
+                                                      {ev.claim}
+                                                    </span>
+                                                  </div>
+                                                  <div className="flex items-center gap-1 shrink-0">
+                                                    <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider border ${
+                                                      ev.stance === "support"
+                                                        ? "bg-success/10 border-success/30 text-success"
+                                                        : ev.stance === "contradict"
+                                                        ? "bg-error/10 border-error/30 text-error"
+                                                        : "bg-muted/10 border-muted/30 text-muted"
+                                                    }`}>
+                                                      {ev.stance}
+                                                    </span>
+                                                    <ChevronRight className={`w-3.5 h-3.5 text-muted/60 transition-transform ${isExpanded ? "rotate-90 text-secondary" : ""}`} />
+                                                  </div>
+                                                </div>
+                                                
+                                                {isExpanded && (
+                                                  <motion.p
+                                                    initial={{ opacity: 0, height: 0 }}
+                                                    animate={{ opacity: 1, height: "auto" }}
+                                                    className="text-xs text-muted mt-2 pt-2 border-t border-border/30 leading-relaxed"
+                                                  >
+                                                    <strong>Verification detail:</strong> This source supports the decision context by validating the underlying assumptions or physical/logical rules of the proposed case.
+                                                  </motion.p>
+                                                )}
+                                              </div>
+                                            );
+                                          })
+                                        ) : (
+                                          <div className="p-3 bg-card/20 border border-dashed border-border rounded-xl text-xs text-muted text-center">
+                                            Model reasoning only — no external evidence used.
                                           </div>
-                                          
-                                          {isExpanded && (
-                                            <motion.p
-                                              initial={{ opacity: 0, height: 0 }}
-                                              animate={{ opacity: 1, height: "auto" }}
-                                              className="text-xs text-muted mt-2 pt-2 border-t border-border/30 leading-relaxed"
-                                            >
-                                              <strong>Verification detail:</strong> This source supports the decision context by validating the underlying assumptions or physical/logical rules of the proposed case.
-                                            </motion.p>
-                                          )}
-                                        </div>
-                                      );
-                                    })
-                                  ) : (
-                                    <div className="p-3 bg-card/20 border border-dashed border-border rounded-xl text-xs text-muted text-center">
-                                      Model reasoning only — no external evidence used.
-                                    </div>
+                                        )}
+                                      </div>
+                                    </motion.div>
                                   )}
-                                </div>
+                                </AnimatePresence>
                               </div>
 
                               {/* 3. MULTI-ANGLE DETAILED VIEWS (Grounded 2x2 grid for scanning) */}
-                              <div>
-                                <div className="text-[10px] font-bold text-muted uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                                  <Sparkles className="w-3.5 h-3.5 text-secondary" />
-                                  Multi-Angle Verification Audit
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                                  
-                                  {/* Logical Consistency */}
-                                  <div className="bg-card/40 border border-border/50 p-4 rounded-xl flex flex-col gap-1.5">
-                                    <div className="flex items-center gap-1.5 text-xs font-bold text-text">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                                      Logical Logic
-                                    </div>
-                                    <p className="text-xs text-muted leading-relaxed">
-                                      {decision.angles.logicalConsistency || "Verification details unavailable for this lens."}
-                                    </p>
+                              <div className="border border-border/40 rounded-xl overflow-hidden bg-card/10">
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedMultiAngleSections(prev => ({
+                                    ...prev,
+                                    [message.id]: !prev[message.id]
+                                  }))}
+                                  className="w-full flex items-center justify-between p-3 bg-card/25 hover:bg-card/40 transition-colors text-left"
+                                >
+                                  <div className="text-[10px] font-bold text-muted uppercase tracking-wider flex items-center gap-1.5 select-none">
+                                    <Sparkles className="w-3.5 h-3.5 text-secondary" />
+                                    <span>Multi-Angle Verification Audit</span>
+                                    <span className="ml-1.5 px-1.5 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded text-[8px] font-black font-mono">
+                                      4 LENSES
+                                    </span>
                                   </div>
-
-                                  {/* Factual Grounding */}
-                                  <div className="bg-card/40 border border-border/50 p-4 rounded-xl flex flex-col gap-1.5">
-                                    <div className="flex items-center gap-1.5 text-xs font-bold text-text">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-                                      Factual Grounding
-                                    </div>
-                                    <p className="text-xs text-muted leading-relaxed">
-                                      {decision.angles.factualGrounding || "Verification details unavailable for this lens."}
-                                    </p>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-[9px] text-muted font-medium mr-1 select-none">
+                                      {expandedMultiAngleSections[message.id] ? "Collapse" : "Expand"}
+                                    </span>
+                                    {expandedMultiAngleSections[message.id] ? (
+                                      <ChevronDown className="w-4 h-4 text-muted transition-transform" />
+                                    ) : (
+                                      <ChevronRight className="w-4 h-4 text-muted transition-transform" />
+                                    )}
                                   </div>
+                                </button>
 
-                                  {/* Risk & Edges */}
-                                  <div className="bg-card/40 border border-border/50 p-4 rounded-xl flex flex-col gap-1.5">
-                                    <div className="flex items-center gap-1.5 text-xs font-bold text-text">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-warning" />
-                                      Risk & Edges
-                                    </div>
-                                    <p className="text-xs text-muted leading-relaxed">
-                                      {decision.angles.riskEdgeCases || "Verification details unavailable for this lens."}
-                                    </p>
-                                  </div>
+                                <AnimatePresence initial={false}>
+                                  {expandedMultiAngleSections[message.id] && (
+                                    <motion.div
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: "auto", opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      transition={{ duration: 0.2, ease: "easeInOut" }}
+                                      className="border-t border-border/30 p-3"
+                                    >
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                                        
+                                        {/* Logical Consistency */}
+                                        <div className="bg-card/40 border border-border/50 p-4 rounded-xl flex flex-col gap-1.5">
+                                          <div className="flex items-center gap-1.5 text-xs font-bold text-text">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                                            Logical Logic
+                                          </div>
+                                          <p className="text-xs text-muted leading-relaxed">
+                                            {decision.angles.logicalConsistency || "Verification details unavailable for this lens."}
+                                          </p>
+                                        </div>
 
-                                  {/* Alternative View */}
-                                  <div className="bg-card/40 border border-border/50 p-4 rounded-xl flex flex-col gap-1.5">
-                                    <div className="flex items-center gap-1.5 text-xs font-bold text-text">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-secondary" />
-                                      Alternative View
-                                    </div>
-                                    <p className="text-xs text-muted leading-relaxed">
-                                      {decision.angles.alternativeView || "Verification details unavailable for this lens."}
-                                    </p>
-                                  </div>
+                                        {/* Factual Grounding */}
+                                        <div className="bg-card/40 border border-border/50 p-4 rounded-xl flex flex-col gap-1.5">
+                                          <div className="flex items-center gap-1.5 text-xs font-bold text-text">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+                                            Factual Grounding
+                                          </div>
+                                          <p className="text-xs text-muted leading-relaxed">
+                                            {decision.angles.factualGrounding || "Verification details unavailable for this lens."}
+                                          </p>
+                                        </div>
 
-                                </div>
+                                        {/* Risk & Edges */}
+                                        <div className="bg-card/40 border border-border/50 p-4 rounded-xl flex flex-col gap-1.5">
+                                          <div className="flex items-center gap-1.5 text-xs font-bold text-text">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-warning" />
+                                            Risk & Edges
+                                          </div>
+                                          <p className="text-xs text-muted leading-relaxed">
+                                            {decision.angles.riskEdgeCases || "Verification details unavailable for this lens."}
+                                          </p>
+                                        </div>
+
+                                        {/* Alternative View */}
+                                        <div className="bg-card/40 border border-border/50 p-4 rounded-xl flex flex-col gap-1.5">
+                                          <div className="flex items-center gap-1.5 text-xs font-bold text-text">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-secondary" />
+                                            Alternative View
+                                          </div>
+                                          <p className="text-xs text-muted leading-relaxed">
+                                            {decision.angles.alternativeView || "Verification details unavailable for this lens."}
+                                          </p>
+                                        </div>
+
+                                      </div>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
                               </div>
 
                             </div>
@@ -3340,6 +3449,78 @@ export default function App() {
                             );
                           })()}
 
+                          {/* AUTO MODE INTELLIGENCE & CLASSIFICATION PANEL */}
+                          {message.intentClassification && (
+                            <div className="bg-surface/50 border border-border/60 rounded-xl p-4 shadow-sm flex flex-col gap-3 mb-3 text-left">
+                              <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                                <div className="text-[10px] font-bold text-muted uppercase tracking-wider flex items-center gap-1.5">
+                                  <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
+                                  <span>Veriqon Auto-Mode Intelligence</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[9px] text-muted font-medium">Class Confidence:</span>
+                                  <span className="text-xs font-black text-primary font-mono">{message.intentClassification.confidence}%</span>
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                {/* Category & Icon */}
+                                <div className="bg-card/30 border border-border/30 px-3 py-2 rounded-lg flex items-center gap-2.5">
+                                  <div className="p-1.5 rounded-md bg-primary/10 text-primary shrink-0">
+                                    {(() => {
+                                      const cat = message.intentClassification.category;
+                                      if (cat === "greetings_or_casual") return <MessageSquare className="w-4 h-4 text-primary" />;
+                                      if (cat === "text_summarization") return <RefreshCw className="w-4 h-4 text-primary animate-spin" style={{ animationDuration: '6s' }} />;
+                                      if (cat === "code_generation_or_debug") return <Code2 className="w-4 h-4 text-primary" />;
+                                      if (cat === "creative_generation") return <PenTool className="w-4 h-4 text-primary" />;
+                                      if (cat === "mathematical_or_logic") return <Binary className="w-4 h-4 text-primary" />;
+                                      if (cat === "scientific_or_academic") return <BookOpen className="w-4 h-4 text-primary" />;
+                                      if (cat === "decision_or_business_audit") return <Briefcase className="w-4 h-4 text-primary" />;
+                                      return <Cpu className="w-4 h-4 text-primary" />;
+                                    })()}
+                                  </div>
+                                  <div className="flex flex-col min-w-0">
+                                    <span className="text-[8px] text-muted uppercase font-bold tracking-wider">Intent category</span>
+                                    <span className="text-xs font-semibold text-text capitalize truncate">
+                                      {message.intentClassification.category.replace(/_/g, ' ')}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Tailored Styling */}
+                                <div className="bg-card/30 border border-border/30 px-3 py-2 rounded-lg flex items-center gap-2.5">
+                                  <div className="p-1.5 rounded-md bg-accent/10 text-accent shrink-0">
+                                    <Layers className="w-4 h-4 text-accent" />
+                                  </div>
+                                  <div className="flex flex-col min-w-0">
+                                    <span className="text-[8px] text-muted uppercase font-bold tracking-wider">Tailored Layout</span>
+                                    <span className="text-xs font-semibold text-text truncate">
+                                      {message.intentClassification.tailoredStyle}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Humanized Tone */}
+                                <div className="bg-card/30 border border-border/30 px-3 py-2 rounded-lg flex items-center gap-2.5">
+                                  <div className="p-1.5 rounded-md bg-secondary/10 text-secondary shrink-0">
+                                    <UserCheck className="w-4 h-4 text-secondary" />
+                                  </div>
+                                  <div className="flex flex-col min-w-0">
+                                    <span className="text-[8px] text-muted uppercase font-bold tracking-wider">Tone System</span>
+                                    <span className="text-xs font-semibold text-text truncate">
+                                      {message.intentClassification.humanized ? "Humanized (Verified)" : "Standard AI"}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <p className="text-[11px] text-muted bg-card/15 px-2.5 py-1.5 rounded border border-border/20 leading-relaxed font-medium">
+                                <span className="font-bold text-text mr-1">Aesthetic Tuning:</span> 
+                                {message.intentClassification.explanation}
+                              </p>
+                            </div>
+                          )}
+
                           <div className="markdown-body text-sm leading-relaxed text-text">
                             <Markdown>{message.content}</Markdown>
                           </div>
@@ -3492,8 +3673,8 @@ export default function App() {
                   animate={{ scale: 1, opacity: 1 }}
                   className="max-w-md bg-card/40 border border-border p-6 rounded-2xl shadow-xl flex flex-col items-center"
                 >
-                  <div className="w-14 h-14 rounded-2xl bg-primary/15 border border-primary/25 flex items-center justify-center text-primary mb-4 shadow-inner">
-                    <Shield className="w-8 h-8" />
+                  <div className="w-24 h-24 rounded-3xl border border-border overflow-hidden mb-4 shadow-[0_0_25px_rgba(235,52,2,0.35)] bg-white flex items-center justify-center">
+                    <img src={logoUrl} alt="Veriqon AI Logo" className="w-full h-full object-cover p-0 transition-transform duration-300 hover:scale-105" referrerPolicy="no-referrer" />
                   </div>
                   
                   <h2 className="text-xl font-bold tracking-tight text-text">Veriqon AI Verification</h2>
@@ -3509,7 +3690,7 @@ export default function App() {
                     <span className="text-[10px] font-bold text-primary tracking-wider uppercase">Verification Lenses</span>
                     
                     <div className="flex gap-2 items-center bg-surface/50 p-2.5 rounded-xl border border-border">
-                      <Zap className="w-4 h-4 text-accent" />
+                      <Zap className="w-4 h-4 text-accent animate-pulse" />
                       <div>
                         <h4 className="text-[11.5px] font-bold text-text">Confidence Dialing</h4>
                         <p className="text-[9.5px] text-muted">A clear radial ring score of logical certainty and backing.</p>
@@ -3821,19 +4002,6 @@ export default function App() {
 
                 {/* TEMPORARY CHAT TOGGLE (Dashed style, accent badge) */}
                 <div className="flex items-center gap-2">
-                  {canRegenerateLast && (
-                    <button
-                      type="button"
-                      onClick={(e) => handleRegenerate(lastMessage.id, e)}
-                      disabled={isGenerating}
-                      className="p-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1 shrink-0 cursor-pointer bg-warning/10 hover:bg-warning/25 border-warning/40 hover:border-warning text-warning disabled:opacity-40"
-                      title="Regenerate last verified analysis"
-                    >
-                      <RotateCw className={`w-3 h-3 ${isGenerating ? "animate-spin" : ""}`} />
-                      <span className="hidden sm:inline">Regenerate</span>
-                    </button>
-                  )}
-
                   <button
                     type="button"
                     onClick={() => {
