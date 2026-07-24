@@ -2,6 +2,8 @@
 
 > **Trust Every Decision** — Enterprise-grade decision verification and auditing platform powered by Google Gemini AI
 
+**Veriqon-AI** is a **no-code AI assistant** built using **Google AI Studio** through advanced prompt engineering and AI system design. It combines intelligent web search, multimodal AI capabilities, and explainable AI features to deliver reliable, transparent, and efficient AI interactions.
+
 ---
 
 ## Table of Contents
@@ -24,13 +26,13 @@
 
 **VERIQON** - High-Assurance Decision Verification Interface
 
-A professional, enterprise-grade decision-verification and auditing intelligence system that transforms how organizations evaluate critical decisions. VERIQON leverages advanced AI reasoning to provide rigorous, evidence-based analysis with transparent decision scoring and multi-angle verification.
+A professional, enterprise-grade decision-verification and auditing intelligence system that transforms how organizations evaluate critical decisions. VERIQON leverages advanced AI reasoning to provide structured, evidence-based decision support with rigorous multi-angle verification and comprehensive risk assessment.
 
 ---
 
 ## About the Project
 
-VERIQON AI is a sophisticated full-stack web application designed to serve as a premium decision intelligence platform. Built with React 19 (Vite) on the frontend and Express on the backend, VERIQON integrates Google's Gemini API to provide advanced decision analysis, business scenario evaluation, and strategic auditing capabilities.
+VERIQON AI is a sophisticated full-stack web application designed to serve as a premium decision intelligence platform. Built with React 19 (Vite) on the frontend and Express on the backend, VERIQON combines state-of-the-art generative AI with enterprise-grade security, comprehensive decision auditing, and intuitive user experience design.
 
 The system operates in two intelligent modes:
 - **Standard Mode**: Fast, conversational assistance for general queries, coding help, creative generation, and information requests
@@ -468,7 +470,7 @@ Artificial Intelligence & Data Science Engineer
 
 ### About
 
-Parth is a passionate AI and data science engineer specializing in enterprise decision intelligence systems, advanced language models, and enterprise-grade security architectures. VERIQON represents his vision for bringing transparency, rigor, and evidence-based reasoning to critical decision-making processes.
+Parth is a passionate AI and data science engineer specializing in enterprise decision intelligence systems, advanced language models, and enterprise-grade security architectures. VERIQON represents the culmination of years of research and development in applied AI, prompt engineering, and decision science.
 
 ### Acknowledgments
 
