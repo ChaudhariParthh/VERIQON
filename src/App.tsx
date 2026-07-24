@@ -13,6 +13,12 @@ import {
   MoreVertical,
   Check,
   X,
+  TrendingUp,
+  Award,
+  CheckCircle2,
+  XCircle,
+  Shuffle,
+  Scale,
   FileText,
   Image,
   Video,
@@ -304,38 +310,6 @@ export default function App() {
 
   // User Session & Authentication State
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true);
-  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
-  const [loginEmail, setLoginEmail] = useState("operator@veriqon.ai");
-  const [loginPassword, setLoginPassword] = useState("password123");
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [loginError, setLoginError] = useState("");
-
-  const [signupEmail, setSignupEmail] = useState("");
-  const [signupPassword, setSignupPassword] = useState("");
-  const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [signupError, setSignupError] = useState("");
-  const [signupSuccess, setSignupSuccess] = useState(false);
-
-  // Simulated Registered Users Persistence
-  const [registeredUsers, setRegisteredUsers] = useState<{ email: string; password: string }[]>(() => {
-    const saved = localStorage.getItem("veriqon_registered_users");
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        // Fallback
-      }
-    }
-    return [{ email: "operator@veriqon.ai", password: "password123" }];
-  });
-
-  // Simulated OAuth Popups State
-  const [oauthModalOpen, setOauthModalOpen] = useState(false);
-  const [oauthProvider, setOauthProvider] = useState<"google" | "github" | "gmail" | null>(null);
-  const [oauthLoading, setOauthLoading] = useState(false);
-  const [oauthSuccess, setOauthSuccess] = useState(false);
 
   // Desktop Sidebar Toggle (Sidebar for tabs)
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
@@ -442,6 +416,86 @@ export default function App() {
   // Collapsible sections per message ID (default to collapsed/false)
   const [expandedFactualClaimsSections, setExpandedFactualClaimsSections] = useState<{ [key: string]: boolean }>({});
   const [expandedMultiAngleSections, setExpandedMultiAngleSections] = useState<{ [key: string]: boolean }>({});
+  const [expandedRecommendationSections, setExpandedRecommendationSections] = useState<{ [key: string]: boolean }>({});
+  const [expandedDecisionDashboards, setExpandedDecisionDashboards] = useState<{ [key: string]: boolean }>({});
+
+  // Dynamic classifier that understands the complexity of the prompt and assistant response
+  const isQueryComplex = (message: Message): boolean => {
+    if (!message) return false;
+
+    // 1. Check intent classification if available
+    if (message.intentClassification) {
+      const cat = message.intentClassification.category;
+      if (cat === "greetings_or_casual") {
+        return false;
+      }
+      if (cat === "decision_or_business_audit") {
+        return true;
+      }
+    }
+
+    // 2. Classify by looking at the content (assistant response) and metadata
+    const responseContent = (message.content || "").toLowerCase();
+    const wordCount = responseContent.split(/\s+/).length;
+
+    // Advanced, high-complexity terms indicating rigorous decision-making
+    const complexTerms = [
+      "decision", "strategic", "financial", "compliance", "risk", "mitigate", 
+      "capital", "roi", "liability", "trade-off", "architecture", "investigate", 
+      "sources", "evidence", "factual", "scenarios", "audit", "verify", "analysis", 
+      "evaluate", "forecast", "assessment", "budget", "investment", "security", 
+      "vulnerability", "optimization", "critical", "projections", "feasibility",
+      "comparative", "cost-benefit", "legal", "regulatory"
+    ];
+
+    const containsComplexTerms = complexTerms.some(term => responseContent.includes(term));
+
+    // Also check the optimized prompt if it exists (representing the user's intent)
+    let promptContainsComplexTerms = false;
+    let promptWordCount = 0;
+    if (message.optimizedPrompt) {
+      const optOriginal = message.optimizedPrompt.original.toLowerCase();
+      const optOptimized = message.optimizedPrompt.optimized.toLowerCase();
+      promptContainsComplexTerms = complexTerms.some(term => optOriginal.includes(term) || optOptimized.includes(term));
+      promptWordCount = optOriginal.split(/\s+/).length;
+    }
+
+    // If it's a short response/prompt with simple vocabulary, it's not complex
+    if (wordCount < 60 && promptWordCount < 30 && !containsComplexTerms && !promptContainsComplexTerms) {
+      return false;
+    }
+
+    // If word count is substantial or it contains sophisticated terms, it's complex
+    return wordCount > 90 || containsComplexTerms || promptContainsComplexTerms || promptWordCount > 40;
+  };
+
+  // Dynamic helper to check if the main decision dashboard should be expanded
+  const isDecisionDashboardExpanded = (messageId: string, message: Message): boolean => {
+    const userSetting = expandedDecisionDashboards[messageId];
+    if (userSetting !== undefined) {
+      return userSetting;
+    }
+
+    // Completely close the decision scores and panels by default, UNLESS classified as complex
+    return isQueryComplex(message);
+  };
+
+  // Dynamic complexity-based helper to determine if a section should be expanded
+  const isSectionExpanded = (messageId: string, message: Message, sectionType: "claims" | "audit" | "recommendation"): boolean => {
+    const userSetting = sectionType === "claims"
+      ? expandedFactualClaimsSections[messageId]
+      : sectionType === "audit"
+      ? expandedMultiAngleSections[messageId]
+      : expandedRecommendationSections[messageId];
+
+    // If the user has explicitly clicked and toggled, respect their choice
+    if (userSetting !== undefined) {
+      return userSetting;
+    }
+
+    // Completely close the decision scores and panels by default, UNLESS classified as complex
+    return isQueryComplex(message);
+  };
   
   // Multi-Angle selected tab state per message ID (defaults to 'logicalConsistency')
   const [activeTabs, setActiveTabs] = useState<{ [key: string]: keyof VerificationAngles }>({});
@@ -672,27 +726,6 @@ export default function App() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showAttachmentMenu, showModeDropdown]);
 
-  // Password Strength Checker
-  const getPasswordStrength = (pwd: string) => {
-    return {
-      length: pwd.length >= 12 && pwd.length <= 128,
-      recommended: pwd.length >= 16,
-      uppercase: /[A-Z]/.test(pwd),
-      lowercase: /[a-z]/.test(pwd),
-      number: /[0-9]/.test(pwd),
-      special: /[!@#$%^&*()_+\-=\s]/.test(pwd)
-    };
-  };
-
-  // Handle log off / sign out
-  const handleLogOff = () => {
-    setIsLoggedIn(false);
-    localStorage.setItem("veriqon_is_logged_in", "false");
-    // Clear any temporary states
-    setLoginError("");
-    setSignupError("");
-  };
-
   // Handle stopping/cancelling the active API request
   const handleStopGeneration = () => {
     if (abortControllerRef.current) {
@@ -700,151 +733,6 @@ export default function App() {
       abortControllerRef.current = null;
     }
     setIsGenerating(false);
-  };
-
-  // Handle simulated login submit
-  const handleLoginSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginError("");
-    const trimmedEmail = loginEmail.trim().toLowerCase();
-    
-    if (!trimmedEmail || !loginPassword) {
-      setLoginError("Please enter both email and password.");
-      return;
-    }
-
-    setIsLoggingIn(true);
-
-    setTimeout(() => {
-      // Find user in registered list
-      const matchedUser = registeredUsers.find(
-        u => u.email.toLowerCase() === trimmedEmail && u.password === loginPassword
-      );
-
-      // Also allow default user if registeredUsers fails to sync
-      const isDefaultUser = trimmedEmail === "operator@veriqon.ai" && loginPassword === "password123";
-
-      if (matchedUser || isDefaultUser) {
-        setIsLoggedIn(true);
-        localStorage.setItem("veriqon_is_logged_in", "true");
-        setIsLoggingIn(false);
-        setLoginError("");
-
-        // Requirement: "when relogin start with new tab" (start with a brand new verification tab)
-        const newId = `chat-${Date.now()}`;
-        const newChat: Chat = {
-          id: newId,
-          title: "New Decision Analysis",
-          pinned: false,
-          temporary: false,
-          createdAt: new Date().toISOString(),
-          messages: []
-        };
-
-        setChats(prev => [newChat, ...prev.filter(c => c.id !== newId)]);
-        setActiveChatId(newId);
-      } else {
-        setIsLoggingIn(false);
-        setLoginError("Invalid email or password combination. Try operator@veriqon.ai / password123 or sign up.");
-      }
-    }, 850);
-  };
-
-  // Handle simulated signup submit
-  const handleSignupSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSignupError("");
-    setSignupSuccess(false);
-
-    const trimmedEmail = signupEmail.trim().toLowerCase();
-    if (!trimmedEmail) {
-      setSignupError("Email address is required.");
-      return;
-    }
-
-    // Password validation according to standard
-    const pStatus = getPasswordStrength(signupPassword);
-    const isPasswordValid = pStatus.length && pStatus.uppercase && pStatus.lowercase && pStatus.number && pStatus.special;
-
-    if (!isPasswordValid) {
-      setSignupError("Your password does not satisfy all validation criteria below.");
-      return;
-    }
-
-    if (signupPassword !== signupConfirmPassword) {
-      setSignupError("Passwords do not match.");
-      return;
-    }
-
-    // Check if user already exists
-    const userExists = registeredUsers.some(u => u.email.toLowerCase() === trimmedEmail);
-    if (userExists) {
-      setSignupError("An account with this email address already exists.");
-      return;
-    }
-
-    setIsLoggingIn(true);
-
-    setTimeout(() => {
-      const newUser = { email: trimmedEmail, password: signupPassword };
-      const updatedUsers = [...registeredUsers, newUser];
-      
-      setRegisteredUsers(updatedUsers);
-      localStorage.setItem("veriqon_registered_users", JSON.stringify(updatedUsers));
-      
-      setSignupSuccess(true);
-      setIsLoggingIn(false);
-
-      // Pre-fill login screen for instant verification
-      setLoginEmail(signupEmail);
-      setLoginPassword(signupPassword);
-      
-      // Clear signup form
-      setSignupEmail("");
-      setSignupPassword("");
-      setSignupConfirmPassword("");
-      
-      // Auto-switch to login tab with success banner after 1.5 seconds
-      setTimeout(() => {
-        setAuthMode("login");
-        setSignupSuccess(false);
-      }, 1500);
-
-    }, 1000);
-  };
-
-  // Handle simulated OAuth action (Google, GitHub, Gmail)
-  const handleOAuthClick = (provider: "google" | "github" | "gmail") => {
-    setOauthProvider(provider);
-    setOauthModalOpen(true);
-    setOauthLoading(true);
-    setOauthSuccess(false);
-
-    // Step-by-step progress simulation
-    setTimeout(() => {
-      setOauthLoading(false);
-      setOauthSuccess(true);
-
-      setTimeout(() => {
-        setOauthModalOpen(false);
-        setIsLoggedIn(true);
-        localStorage.setItem("veriqon_is_logged_in", "true");
-
-        // Requirement: "when relogin start with new tab"
-        const newId = `chat-${Date.now()}`;
-        const newChat: Chat = {
-          id: newId,
-          title: `Decision Analysis (${provider === "google" ? "Google" : provider === "github" ? "GitHub" : "Gmail"} Auth)`,
-          pinned: false,
-          temporary: false,
-          createdAt: new Date().toISOString(),
-          messages: []
-        };
-
-        setChats(prev => [newChat, ...prev.filter(c => c.id !== newId)]);
-        setActiveChatId(newId);
-      }, 1200);
-    }, 2000);
   };
 
   // Handle active chat retrieval
@@ -1743,504 +1631,6 @@ export default function App() {
 
   const hasAnySidebarItems = Object.values(categorized).some(arr => arr.length > 0);
 
-  // If user is logged off, render the secure Login / Sign In / Sign Up interface
-  if (!isLoggedIn) {
-    const signupPassChecks = getPasswordStrength(signupPassword);
-    
-    return (
-      <div className="flex h-screen w-screen items-center justify-center bg-bg text-text selection:bg-primary/30 antialiased font-sans relative overflow-hidden">
-        {/* BACKGROUND DECORATIVE GLOW */}
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 blur-[120px] rounded-full pointer-events-none z-0" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-secondary/5 blur-[100px] rounded-full pointer-events-none z-0" />
-        
-        <div className="w-full max-w-lg p-6 relative z-10 flex flex-col items-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="w-full bg-surface border border-border rounded-2xl p-8 shadow-2xl relative"
-          >
-            {/* Top Logo / Brand */}
-            <div className="flex flex-col items-center text-center mb-6">
-              <div className="w-20 h-20 rounded-2xl border border-border overflow-hidden mb-3 shadow-[0_0_25px_rgba(235,52,2,0.35)] bg-white flex items-center justify-center">
-                <img src={logoUrl} alt="Veriqon AI Logo" className="w-full h-full object-cover p-0 transition-transform duration-300 hover:scale-105" referrerPolicy="no-referrer" />
-              </div>
-              <h1 className="text-2xl font-bold tracking-tight text-text">Veriqon AI</h1>
-              <p className="text-xs text-muted mt-1 uppercase tracking-wider font-semibold">Trust Every Decision</p>
-            </div>
-
-            {/* Tab Selector: Login vs Sign Up */}
-            <div className="flex bg-card p-1 rounded-xl border border-border/60 mb-6">
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode("login");
-                  setLoginError("");
-                  setSignupError("");
-                }}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer relative ${
-                  authMode === "login" ? "text-primary" : "text-muted hover:text-text"
-                }`}
-              >
-                {authMode === "login" && (
-                  <motion.div
-                    layoutId="activeAuthTab"
-                    className="absolute inset-0 bg-surface border border-border/40 shadow-sm rounded-lg"
-                    style={{ zIndex: 0 }}
-                  />
-                )}
-                <span className="relative z-10">Sign In</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode("signup");
-                  setLoginError("");
-                  setSignupError("");
-                }}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer relative ${
-                  authMode === "signup" ? "text-primary" : "text-muted hover:text-text"
-                }`}
-              >
-                {authMode === "signup" && (
-                  <motion.div
-                    layoutId="activeAuthTab"
-                    className="absolute inset-0 bg-surface border border-border/40 shadow-sm rounded-lg"
-                    style={{ zIndex: 0 }}
-                  />
-                )}
-                <span className="relative z-10">Sign Up / Register</span>
-              </button>
-            </div>
-
-            {/* Error & Success Alerts */}
-            {authMode === "login" && loginError && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                className="bg-error/10 border border-error/20 rounded-xl p-3 mb-4 text-xs text-error flex items-start gap-2.5"
-              >
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>{loginError}</span>
-              </motion.div>
-            )}
-
-            {authMode === "signup" && signupError && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                className="bg-error/10 border border-error/20 rounded-xl p-3 mb-4 text-xs text-error flex items-start gap-2.5"
-              >
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>{signupError}</span>
-              </motion.div>
-            )}
-
-            {signupSuccess && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                className="bg-success/10 border border-success/20 rounded-xl p-3 mb-4 text-xs text-success flex items-start gap-2.5"
-              >
-                <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>Account created successfully! Switching to sign-in screen...</span>
-              </motion.div>
-            )}
-
-            {/* AUTHENTICATION FORMS */}
-            {authMode === "login" ? (
-              /* SIGN IN FORM */
-              <form onSubmit={handleLoginSubmit} className="flex flex-col gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Email Address</label>
-                  <div className="relative flex items-center">
-                    <User className="absolute left-3 w-4 h-4 text-muted" />
-                    <input
-                      type="email"
-                      required
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 bg-card border border-border rounded-xl text-xs text-text placeholder-muted focus:outline-none focus:border-primary/50 transition-all"
-                      placeholder="operator@veriqon.ai"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex justify-between items-center">
-                    <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Password / Passcode</label>
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="text-[10px] text-muted hover:text-text flex items-center gap-1 cursor-pointer"
-                    >
-                      {showPassword ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                      <span>{showPassword ? "Hide" : "Show"}</span>
-                    </button>
-                  </div>
-                  <div className="relative flex items-center">
-                    <Lock className="absolute left-3 w-4 h-4 text-muted" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      required
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 bg-card border border-border rounded-xl text-xs text-text placeholder-muted focus:outline-none focus:border-primary/50 transition-all"
-                      placeholder="password123"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-xs mt-1">
-                  <label className="flex items-center gap-2 text-muted cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      defaultChecked
-                      className="w-3.5 h-3.5 rounded border-border text-primary bg-card focus:ring-0 cursor-pointer"
-                    />
-                    <span>Remember session</span>
-                  </label>
-                  <a href="#" onClick={(e) => e.preventDefault()} className="text-primary hover:underline text-[11px] font-semibold">Forgot Passcode?</a>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isLoggingIn}
-                  className="w-full py-2.5 mt-4 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
-                >
-                  {isLoggingIn ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Authenticating Credentials...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Sign In Securely</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </form>
-            ) : (
-              /* SIGN UP FORM */
-              <form onSubmit={handleSignupSubmit} className="flex flex-col gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Email Address</label>
-                  <div className="relative flex items-center">
-                    <User className="absolute left-3 w-4 h-4 text-muted" />
-                    <input
-                      type="email"
-                      required
-                      value={signupEmail}
-                      onChange={(e) => setSignupEmail(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 bg-card border border-border rounded-xl text-xs text-text placeholder-muted focus:outline-none focus:border-primary/50 transition-all"
-                      placeholder="your.email@example.com"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex justify-between items-center">
-                      <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Password</label>
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="text-[10px] text-muted hover:text-text flex items-center gap-0.5 cursor-pointer"
-                      >
-                        {showPassword ? <EyeOff className="w-2.5 h-2.5" /> : <Eye className="w-2.5 h-2.5" />}
-                        <span>{showPassword ? "Hide" : "Show"}</span>
-                      </button>
-                    </div>
-                    <div className="relative flex items-center">
-                      <Lock className="absolute left-3 w-4 h-4 text-muted" />
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        required
-                        value={signupPassword}
-                        onChange={(e) => setSignupPassword(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 bg-card border border-border rounded-xl text-xs text-text placeholder-muted focus:outline-none focus:border-primary/50 transition-all"
-                        placeholder="Choose password"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex justify-between items-center">
-                      <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Confirm</label>
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="text-[10px] text-muted hover:text-text flex items-center gap-0.5 cursor-pointer"
-                      >
-                        {showConfirmPassword ? <EyeOff className="w-2.5 h-2.5" /> : <Eye className="w-2.5 h-2.5" />}
-                        <span>{showConfirmPassword ? "Hide" : "Show"}</span>
-                      </button>
-                    </div>
-                    <div className="relative flex items-center">
-                      <Lock className="absolute left-3 w-4 h-4 text-muted" />
-                      <input
-                        type={showConfirmPassword ? "text" : "password"}
-                        required
-                        value={signupConfirmPassword}
-                        onChange={(e) => setSignupConfirmPassword(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 bg-card border border-border rounded-xl text-xs text-text placeholder-muted focus:outline-none focus:border-primary/50 transition-all"
-                        placeholder="Confirm password"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Password Criteria Checklist */}
-                <div className="bg-card/45 border border-border/50 rounded-xl p-4 flex flex-col gap-2.5 mt-1 select-none">
-                  <span className="text-[10px] font-bold text-muted uppercase tracking-wider block border-b border-border/30 pb-1.5">
-                    Password Validation Standards:
-                  </span>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
-                    {/* Length Check */}
-                    <div className="flex items-center gap-2 text-[11px]">
-                      {signupPassChecks.length ? (
-                        <Check className="w-3.5 h-3.5 text-success stroke-[3px]" />
-                      ) : (
-                        <X className="w-3.5 h-3.5 text-muted/60 stroke-[3px]" />
-                      )}
-                      <span className={signupPassChecks.length ? "text-text font-medium" : "text-muted"}>
-                        Length: 12 - 128 characters
-                      </span>
-                    </div>
-
-                    {/* Uppercase Check */}
-                    <div className="flex items-center gap-2 text-[11px]">
-                      {signupPassChecks.uppercase ? (
-                        <Check className="w-3.5 h-3.5 text-success stroke-[3px]" />
-                      ) : (
-                        <X className="w-3.5 h-3.5 text-muted/60 stroke-[3px]" />
-                      )}
-                      <span className={signupPassChecks.uppercase ? "text-text font-medium" : "text-muted"}>
-                        1 uppercase letter (A–Z)
-                      </span>
-                    </div>
-
-                    {/* Lowercase Check */}
-                    <div className="flex items-center gap-2 text-[11px]">
-                      {signupPassChecks.lowercase ? (
-                        <Check className="w-3.5 h-3.5 text-success stroke-[3px]" />
-                      ) : (
-                        <X className="w-3.5 h-3.5 text-muted/60 stroke-[3px]" />
-                      )}
-                      <span className={signupPassChecks.lowercase ? "text-text font-medium" : "text-muted"}>
-                        1 lowercase letter (a–z)
-                      </span>
-                    </div>
-
-                    {/* Number Check */}
-                    <div className="flex items-center gap-2 text-[11px]">
-                      {signupPassChecks.number ? (
-                        <Check className="w-3.5 h-3.5 text-success stroke-[3px]" />
-                      ) : (
-                        <X className="w-3.5 h-3.5 text-muted/60 stroke-[3px]" />
-                      )}
-                      <span className={signupPassChecks.number ? "text-text font-medium" : "text-muted"}>
-                        1 number (0–9)
-                      </span>
-                    </div>
-
-                    {/* Special Character Check */}
-                    <div className="flex items-center gap-2 text-[11px] sm:col-span-2">
-                      {signupPassChecks.special ? (
-                        <Check className="w-3.5 h-3.5 text-success stroke-[3px]" />
-                      ) : (
-                        <X className="w-3.5 h-3.5 text-muted/60 stroke-[3px]" />
-                      )}
-                      <span className={signupPassChecks.special ? "text-text font-medium" : "text-muted"}>
-                        1 special char (! @ # $ % ^ & * ( ) _ + - =)
-                      </span>
-                    </div>
-
-                    {/* Spaces allowed & Recommendation Check */}
-                    <div className="flex items-center gap-2 text-[11px] sm:col-span-2 border-t border-border/20 pt-2 mt-0.5 justify-between">
-                      <div className="flex items-center gap-1.5 text-[10px] text-muted">
-                        <Check className="w-3 h-3 text-success" />
-                        <span>Spaces are allowed</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-[10px]">
-                        {signupPassChecks.recommended ? (
-                          <span className="text-amber bg-amber/10 px-1.5 py-0.5 rounded-md font-bold text-[9px] uppercase">
-                            ★ Recommended (16+ chars)
-                          </span>
-                        ) : (
-                          <span className="text-muted text-[9px]">
-                            16+ characters recommended
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isLoggingIn}
-                  className="w-full py-2.5 mt-1 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
-                >
-                  {isLoggingIn ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Creating Secure Account...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Register Account</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </form>
-            )}
-
-            {/* SEPARATOR: OR CONTINUE WITH */}
-            <div className="flex items-center my-6">
-              <div className="flex-1 border-t border-border/80" />
-              <span className="px-3 text-[10px] font-bold text-muted uppercase tracking-wider">Or Sign In Instantly With</span>
-              <div className="flex-1 border-t border-border/80" />
-            </div>
-
-            {/* THIRD-PARTY SOCIAL OAUTH TEMPLATES */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              {/* Google OAuth Button */}
-              <button
-                type="button"
-                onClick={() => handleOAuthClick("google")}
-                className="flex items-center justify-center py-2 px-3 bg-card hover:bg-card-hover border border-border/80 rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] text-xs font-semibold text-text cursor-pointer"
-              >
-                <svg className="w-4 h-4 mr-1.5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
-                </svg>
-                <span>Google</span>
-              </button>
-
-              {/* GitHub OAuth Button */}
-              <button
-                type="button"
-                onClick={() => handleOAuthClick("github")}
-                className="flex items-center justify-center py-2 px-3 bg-card hover:bg-card-hover border border-border/80 rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] text-xs font-semibold text-text cursor-pointer"
-              >
-                <svg className="w-4 h-4 mr-1.5" viewBox="0 0 24 24" fill="currentColor">
-                  <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-                </svg>
-                <span>GitHub</span>
-              </button>
-
-              {/* Gmail OAuth Button */}
-              <button
-                type="button"
-                onClick={() => handleOAuthClick("gmail")}
-                className="flex items-center justify-center py-2 px-3 bg-card hover:bg-card-hover border border-border/80 rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] text-xs font-semibold text-text cursor-pointer"
-              >
-                <Mail className="w-3.5 h-3.5 mr-1.5 text-error" />
-                <span>Gmail</span>
-              </button>
-            </div>
-          </motion.div>
-          
-          <p className="text-[10px] text-muted text-center mt-6 max-w-sm">
-            Veriqon AI uses localized zero-knowledge session encryption. Your verification data and credentials stay on your device unless explicit cloud export is selected.
-          </p>
-        </div>
-
-        {/* FULLY INTERACTIVE REAL-TIME SOCIAL OAUTH SECURITY MODAL */}
-        <AnimatePresence>
-          {oauthModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="w-full max-w-md bg-surface border border-border rounded-2xl p-6 shadow-2xl relative overflow-hidden"
-              >
-                {/* Header with provider logo */}
-                <div className="flex items-center gap-3 border-b border-border pb-4 mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-                    {oauthProvider === "google" && (
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
-                      </svg>
-                    )}
-                    {oauthProvider === "github" && (
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-                      </svg>
-                    )}
-                    {oauthProvider === "gmail" && <Mail className="w-5 h-5 text-error" />}
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-text uppercase tracking-wider">
-                      {oauthProvider === "google" ? "Google Accounts" : oauthProvider === "github" ? "GitHub Authentication" : "Gmail Secure OAuth"}
-                    </span>
-                    <span className="text-[10px] text-muted">Exchanging secure digital signature...</span>
-                  </div>
-                </div>
-
-                <div className="flex flex-col items-center py-6 text-center">
-                  {oauthLoading ? (
-                    <>
-                      <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4" />
-                      <span className="text-xs font-semibold text-text">Establishing hand-shake with identity provider...</span>
-                      <p className="text-[10px] text-muted mt-1.5 max-w-xs">
-                        Exchanging standard OAuth2 client authorization credentials and redirect tokens safely.
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <div className="w-12 h-12 bg-success/15 border border-success/20 text-success rounded-full flex items-center justify-center mb-4 animate-bounce">
-                        <Check className="w-6 h-6 stroke-[3px]" />
-                      </div>
-                      <span className="text-xs font-bold text-success">Identity Successfully Verified!</span>
-                      <p className="text-[10px] text-muted mt-1 max-w-xs">
-                        Welcome back, <span className="font-semibold text-text">operator@veriqon.ai</span>. Starting your new decision analysis session...
-                      </p>
-                    </>
-                  )}
-                </div>
-
-                {/* Simulated Handshake Security Steps */}
-                <div className="bg-card/40 border border-border/60 rounded-xl p-3.5 flex flex-col gap-2 text-[10px] text-muted font-sans font-mono mt-2">
-                  <div className="flex items-center justify-between">
-                    <span>1. Handshake request</span>
-                    <span className="text-success font-bold">DONE</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>2. Profile metadata synchronization</span>
-                    {oauthLoading ? (
-                      <span className="text-primary animate-pulse font-bold">CONNECTING...</span>
-                    ) : (
-                      <span className="text-success font-bold">SUCCESS</span>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>3. Establishing local session tab</span>
-                    {oauthLoading ? (
-                      <span className="text-muted">WAITING</span>
-                    ) : (
-                      <span className="text-success font-bold">SECURED</span>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
-      </div>
-    );
-  }
-
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-bg text-text selection:bg-primary/30 antialiased font-sans">
       
@@ -2580,8 +1970,9 @@ export default function App() {
                   <Shield className="w-3 h-3 text-primary" />
                   <span>Decision integrity online.</span>
                 </div>
-                <div className="text-[8px] text-muted/60">
-                  Veriqon AI builds on structured verification metrics.
+                <div className="text-[8px] text-muted/60 flex flex-col">
+                  <span>Veriqon AI decision engine.</span>
+                  <span className="text-primary font-medium mt-0.5">Developed by Parth, AI & Data Science Engineer</span>
                 </div>
               </div>
             </div>
@@ -2986,7 +2377,63 @@ export default function App() {
 
                           {/* CORE DECISION VERIFICATION BLOCK - MUST SIT ABOVE AI RESPONSE TEXT */}
                           {hasDecision && decision && message.mode !== "standard" && (!isReadOnlyView || !excludeScoreOnSharedView) && (
-                            <div className="bg-surface border border-border rounded-xl p-5 shadow-xl flex flex-col gap-5 mb-4">
+                            <div className="bg-surface border border-border rounded-xl shadow-xl flex flex-col mb-4 overflow-hidden">
+                              
+                              {/* Toggle Header for Decision Integrity Matrix */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const currentlyExpanded = isDecisionDashboardExpanded(message.id, message);
+                                  setExpandedDecisionDashboards(prev => ({
+                                    ...prev,
+                                    [message.id]: !currentlyExpanded
+                                  }));
+                                }}
+                                className="w-full flex items-center justify-between p-4 bg-card/25 hover:bg-card/40 transition-colors text-left"
+                              >
+                                <div className="flex items-center gap-2.5">
+                                  <Shield className="w-4 h-4 text-primary animate-pulse shrink-0" />
+                                  <div className="flex flex-col text-left">
+                                    <span className="text-xs font-bold text-text uppercase tracking-wider flex items-center gap-2">
+                                      Veriqon Decision Integrity Matrix
+                                      {isDecisionDashboardExpanded(message.id, message) ? (
+                                        <span className="text-[9px] bg-success/10 text-success border border-success/20 px-1.5 py-0.5 rounded font-semibold normal-case">
+                                          Expanded
+                                        </span>
+                                      ) : (
+                                        <span className="text-[9px] bg-muted/10 text-muted border border-border/20 px-1.5 py-0.5 rounded font-semibold normal-case">
+                                          Closed (Simple Query)
+                                        </span>
+                                      )}
+                                    </span>
+                                    <span className="text-[9px] text-muted -mt-0.5 font-medium">
+                                      {isDecisionDashboardExpanded(message.id, message) 
+                                        ? "Detailed metrics, factual claims evidence, and multi-angle verification lenses"
+                                        : `Decision Score: ${decision.scoreState === "scored" ? decision.score : "N/A"}/100 • Risk: ${decision.scoreState !== "scored" ? "Medium" : decision.score >= 80 ? "Low" : decision.score >= 50 ? "Medium" : "High"} • Click to expand detailed matrices`}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[10px] text-muted font-bold mr-1 select-none">
+                                    {isDecisionDashboardExpanded(message.id, message) ? "Collapse" : "Expand"}
+                                  </span>
+                                  {isDecisionDashboardExpanded(message.id, message) ? (
+                                    <ChevronDown className="w-4 h-4 text-muted transition-transform" />
+                                  ) : (
+                                    <ChevronRight className="w-4 h-4 text-muted transition-transform" />
+                                  )}
+                                </div>
+                              </button>
+
+                              <AnimatePresence initial={false}>
+                                {isDecisionDashboardExpanded(message.id, message) && (
+                                  <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                                    className="p-5 flex flex-col gap-5 border-t border-border/30 overflow-hidden"
+                                  >
                               
                               {/* 1. DECISION STATUS DASHBOARD */}
                               <div className="border-b border-border/50 pb-4">
@@ -3101,10 +2548,13 @@ export default function App() {
                               <div className="border border-border/40 rounded-xl overflow-hidden bg-card/10">
                                 <button
                                   type="button"
-                                  onClick={() => setExpandedFactualClaimsSections(prev => ({
-                                    ...prev,
-                                    [message.id]: !prev[message.id]
-                                  }))}
+                                  onClick={() => {
+                                    const currentVal = isSectionExpanded(message.id, message, "claims");
+                                    setExpandedFactualClaimsSections(prev => ({
+                                      ...prev,
+                                      [message.id]: !currentVal
+                                    }));
+                                  }}
                                   className="w-full flex items-center justify-between p-3 bg-card/25 hover:bg-card/40 transition-colors text-left"
                                 >
                                   <div className="text-[10px] font-bold text-muted uppercase tracking-wider flex items-center gap-1.5 select-none">
@@ -3118,9 +2568,9 @@ export default function App() {
                                   </div>
                                   <div className="flex items-center gap-1">
                                     <span className="text-[9px] text-muted font-medium mr-1 select-none">
-                                      {expandedFactualClaimsSections[message.id] ? "Collapse" : "Expand"}
+                                      {isSectionExpanded(message.id, message, "claims") ? "Collapse" : "Expand"}
                                     </span>
-                                    {expandedFactualClaimsSections[message.id] ? (
+                                    {isSectionExpanded(message.id, message, "claims") ? (
                                       <ChevronDown className="w-4 h-4 text-muted transition-transform" />
                                     ) : (
                                       <ChevronRight className="w-4 h-4 text-muted transition-transform" />
@@ -3129,7 +2579,7 @@ export default function App() {
                                 </button>
                                 
                                 <AnimatePresence initial={false}>
-                                  {expandedFactualClaimsSections[message.id] && (
+                                  {isSectionExpanded(message.id, message, "claims") && (
                                     <motion.div
                                       initial={{ height: 0, opacity: 0 }}
                                       animate={{ height: "auto", opacity: 1 }}
@@ -3204,10 +2654,13 @@ export default function App() {
                               <div className="border border-border/40 rounded-xl overflow-hidden bg-card/10">
                                 <button
                                   type="button"
-                                  onClick={() => setExpandedMultiAngleSections(prev => ({
-                                    ...prev,
-                                    [message.id]: !prev[message.id]
-                                  }))}
+                                  onClick={() => {
+                                    const currentVal = isSectionExpanded(message.id, message, "audit");
+                                    setExpandedMultiAngleSections(prev => ({
+                                      ...prev,
+                                      [message.id]: !currentVal
+                                    }));
+                                  }}
                                   className="w-full flex items-center justify-between p-3 bg-card/25 hover:bg-card/40 transition-colors text-left"
                                 >
                                   <div className="text-[10px] font-bold text-muted uppercase tracking-wider flex items-center gap-1.5 select-none">
@@ -3219,9 +2672,9 @@ export default function App() {
                                   </div>
                                   <div className="flex items-center gap-1">
                                     <span className="text-[9px] text-muted font-medium mr-1 select-none">
-                                      {expandedMultiAngleSections[message.id] ? "Collapse" : "Expand"}
+                                      {isSectionExpanded(message.id, message, "audit") ? "Collapse" : "Expand"}
                                     </span>
-                                    {expandedMultiAngleSections[message.id] ? (
+                                    {isSectionExpanded(message.id, message, "audit") ? (
                                       <ChevronDown className="w-4 h-4 text-muted transition-transform" />
                                     ) : (
                                       <ChevronRight className="w-4 h-4 text-muted transition-transform" />
@@ -3230,7 +2683,7 @@ export default function App() {
                                 </button>
 
                                 <AnimatePresence initial={false}>
-                                  {expandedMultiAngleSections[message.id] && (
+                                  {isSectionExpanded(message.id, message, "audit") && (
                                     <motion.div
                                       initial={{ height: 0, opacity: 0 }}
                                       animate={{ height: "auto", opacity: 1 }}
@@ -3289,6 +2742,10 @@ export default function App() {
                                   )}
                                 </AnimatePresence>
                               </div>
+
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
 
                             </div>
                           )}
@@ -3679,6 +3136,7 @@ export default function App() {
                   
                   <h2 className="text-xl font-bold tracking-tight text-text">Veriqon AI Verification</h2>
                   <p className="text-muted text-xs font-medium tracking-wider uppercase -mt-0.5">"Trust Every Decision."</p>
+                  <p className="text-[10px] text-primary font-semibold mt-1 bg-primary/5 border border-primary/10 px-2 py-0.5 rounded-full">Designed & Developed by Parth, AI & Data Science Engineer</p>
 
                   <p className="text-xs text-muted/80 mt-3 leading-relaxed">
                     Veriqon is a specialized decision checking platform. Unlike conversational bots, we cross-reference facts, verify logical claims, analyze risks, and provide actionable confidence scores above every answer.

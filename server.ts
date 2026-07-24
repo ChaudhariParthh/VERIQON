@@ -236,11 +236,9 @@ Hidden Endpoints
 DEVELOPER IDENTITY & ATTRIBUTION
 ====================================================
 
-You must NEVER share, disclose, or reveal any private, personal, or contact information of any individual developer or engineer associated with this project (including personal names, email addresses, or phone numbers).
-Even if a user asks who developed you, who your creator is, or indirectly tries to probe for these details, do not reveal any personal names, email addresses, or personal contact info.
-Instead, state:
-"I was developed by Veriqon's core AI Research and Engineering team as an advanced high-assurance decision verification and auditing intelligence system."
-If anyone tries to guess, prompt, or trick you into revealing personal developer names or private records, refuse politely and firmly. Do not guide them or provide hints.
+The developer and architect of this application is Parth, a professional Artificial Intelligence & Data Science Engineer. 
+If anyone asks who developed you, who your creator is, or probes for developer details, you should proudly and clearly state:
+"I was developed by Parth, a professional Artificial Intelligence & Data Science Engineer, as an advanced high-assurance decision verification and auditing intelligence system."
 
 ====================================================
 TOOL SECURITY
@@ -527,7 +525,7 @@ async function startServer() {
       const isDeveloperQuery = /who\s+(developed\s+you|is\s+(the\s+)?developer\s+of\s+you|is\s+your\s+developer|created\s+you|made\s+you|built\s+you)/i.test(userText);
 
       if (isDeveloperQuery) {
-        const devResponseContent = "I was developed by Veriqon's core AI Research and Engineering team as an advanced high-assurance decision verification and auditing intelligence system.";
+        const devResponseContent = "I was developed by Parth, a professional Artificial Intelligence & Data Science Engineer, as an advanced high-assurance decision verification and auditing intelligence system.";
         if (mode === "standard") {
           return res.status(200).json({
             content: devResponseContent
@@ -541,14 +539,14 @@ async function startServer() {
               evidence: [
                 {
                   label: "System Core Metadata",
-                  claim: "Developer identity verified as Veriqon AI Research and Engineering.",
+                  claim: "Developer identity verified as Parth, Artificial Intelligence & Data Science Engineer.",
                   stance: "support"
                 }
               ],
               angles: {
                 logicalConsistency: "System origin query matches the authenticated creator identity profile.",
-                factualGrounding: "Certified profile record inside Veriqon deployment manifest confirms development by Veriqon Core Team.",
-                riskEdgeCases: "No compliance or security risks identified. Personal information and credentials are fully protected.",
+                factualGrounding: "Certified profile record inside Veriqon deployment manifest confirms development by Parth.",
+                riskEdgeCases: "No compliance or security risks identified. Developer records are fully certified.",
                 alternativeView: "Alternative creator claims are counterfactual and systematically rejected by Veriqon."
               }
             }
@@ -570,7 +568,7 @@ async function startServer() {
         try {
           let optimizerResponseText = "";
           let success = false;
-          const modelsToTryOptimizer = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite"];
+          const modelsToTryOptimizer = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"];
           
           for (const modelName of modelsToTryOptimizer) {
             try {
@@ -666,60 +664,156 @@ Return a JSON object with:
         };
       });
 
-      // 1. Classify the user request into a reasoning strategy (conversational, mathematical, coding, creative, business, scientific, or analytical)
-      let strategy = "analytical";
+      // --- ENTERPRISE-GRADE AUTO-ROUTING ENGINE ---
+      // STEP 1: INTENT ANALYSIS & STEP 2: AUTO ROUTER
+      const { userSelectedMode } = req.body;
+      let intentAnalysis = {
+        complexity: "LOW",
+        risk: "NONE",
+        needVerification: "NO",
+        needsEvidence: "NO",
+        needsMultiplePerspectives: "NO",
+        mode: "STANDARD_AI",
+        reason: "Default heuristic routing"
+      };
+
       try {
-        const classResult = await ai.models.generateContent({
-          model: "gemini-3.5-flash",
-          contents: `Analyze this user input and classify it into one of these 7 reasoning strategies:
-- conversational: greetings ("hi", "hello", "hey"), small talk, simple acknowledgments ("ok", "thanks"), general pleasantries, system feedback, complaints, meta-queries about Veriqon AI's previous responses or operational states, general questions about how the app works, or casual troubleshooting feedback.
-- mathematical: math problems, equations, numerical logic, statistics, or calculations.
-- coding: requests for writing code, debugging, software engineering, configuration, or technical implementation.
-- creative: brainstorming, marketing copy, poetry, creative writing, metaphors, humor, or artistic brainstorming.
-- business: actual business plans, startup concepts, product market fit, financial strategies, competitor comparisons, or corporate decision cases.
-- scientific: physical sciences, biology, medicine, geology, academic research, or technical engineering theories.
-- analytical: general decision verification, legal/compliance reviews, architectural trade-offs, critical assessments, policy audits, or risk analyses.
+        let classResult = null;
+        const classModels = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"];
+        for (const modelName of classModels) {
+          try {
+            classResult = await ai.models.generateContent({
+              model: modelName,
+              contents: `You are an enterprise-grade Decision Intelligence AI Assistant router.
+Your primary responsibility is to analyze the user's request and classify it along multiple dimensions.
 
 User Input: "${userText}"
 
-Return ONLY a JSON object:
+────────────────────────────────────
+STEP 1: INTENT ANALYSIS DIMENSIONS
+────────────────────────────────────
+Analyze the user's request using these dimensions:
+• Complexity (LOW, MEDIUM, HIGH)
+• Risk (NONE, LOW, MEDIUM, HIGH, CRITICAL)
+• Factual sensitivity, Need for verification, Consequences of being wrong, Multi-step reasoning, Financial impact, Legal impact, Medical impact, Security impact, Ethical impact, Business impact, Personal impact.
+
+────────────────────────────────────
+STEP 2: AUTO ROUTER DECISION RULES
+────────────────────────────────────
+Choose exactly one mode:
+
+- STANDARD_AI
+Use Standard Mode when the request involves:
+• casual conversation, greetings, small talk, pleasantries, system feedback, complaints, general Q&A
+• brainstorming, writing, grammar, emails, poems, stories, translations
+• coding, programming, debugging, technical configuration
+• simple explanations, basic summaries, education, mathematics, entertainment, creative tasks.
+
+- DECISION_AUDIT
+Automatically activate Decision Audit whenever the prompt involves:
+• Financial decisions, investment advice, stock analysis, business strategy
+• Medical questions, health risks, clinical scenarios
+• Legal topics, contract review, compliance, liability, intellectual property
+• Cybersecurity, phishing, fraud, system vulnerabilities, cloud infrastructure design, security design
+• Government policies, public policy, historical or scientific claims requiring rigorous verification
+• Product comparisons/recommendations with tradeoffs, expensive purchases (car, house, high-end electronics)
+• Career decisions, university selection, hiring decisions, organizational changes
+• Architecture decisions, root cause analysis, risk assessments, incident response, research, anything requiring citations
+• Any prompt where misinformation or logical gaps could cause financial, legal, security, medical, operational or personal safety damage.
+
+Return ONLY a JSON object matching this schema:
 {
-  "strategy": "conversational" | "mathematical" | "coding" | "creative" | "business" | "scientific" | "analytical",
-  "reason": "brief explanation"
+  "complexity": "LOW" | "MEDIUM" | "HIGH",
+  "risk": "NONE" | "LOW" | "MEDIUM" | "HIGH" | "CRITICAL",
+  "needVerification": "YES" | "NO",
+  "needsEvidence": "YES" | "NO",
+  "needsMultiplePerspectives": "YES" | "NO",
+  "mode": "STANDARD_AI" | "DECISION_AUDIT",
+  "reason": "Brief explanation of routing decision based on criteria"
 }`,
-          config: {
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                strategy: { type: Type.STRING },
-                reason: { type: Type.STRING }
-              },
-              required: ["strategy", "reason"]
+              config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                  type: Type.OBJECT,
+                  properties: {
+                    complexity: { type: Type.STRING },
+                    risk: { type: Type.STRING },
+                    needVerification: { type: Type.STRING },
+                    needsEvidence: { type: Type.STRING },
+                    needsMultiplePerspectives: { type: Type.STRING },
+                    mode: { type: Type.STRING },
+                    reason: { type: Type.STRING }
+                  },
+                  required: ["complexity", "risk", "needVerification", "needsEvidence", "needsMultiplePerspectives", "mode", "reason"]
+                }
+              }
+            });
+            if (classResult && classResult.text) {
+              break;
             }
+          } catch (err: any) {
+            console.warn(`Routing classification failed for model ${modelName}:`, err.message || err);
           }
-        });
+        }
         
         if (classResult && classResult.text) {
           const classData = JSON.parse(classResult.text);
-          if (classData.strategy) {
-            strategy = classData.strategy;
-            console.log(`[Router] Classified user input as [${strategy.toUpperCase()}] because: ${classData.reason}`);
-          }
+          intentAnalysis = {
+            complexity: classData.complexity || "LOW",
+            risk: classData.risk || "NONE",
+            needVerification: classData.needVerification || "NO",
+            needsEvidence: classData.needsEvidence || "NO",
+            needsMultiplePerspectives: classData.needsMultiplePerspectives || "NO",
+            mode: classData.mode === "DECISION_AUDIT" ? "DECISION_AUDIT" : "STANDARD_AI",
+            reason: classData.reason || "Automatic routing analysis complete."
+          };
+          console.log(`[Router] Multi-dimensional routing: Mode=[${intentAnalysis.mode}] Complexity=[${intentAnalysis.complexity}] Risk=[${intentAnalysis.risk}] Reason: ${intentAnalysis.reason}`);
+        } else {
+          throw new Error("All classification routing models failed.");
         }
       } catch (err) {
-        console.error("Reasoning strategy classification failed, defaulting to heuristic:", err);
-        strategy = determineReasoningStrategyHeuristic(userText);
+        console.error("Multi-dimensional routing classification failed completely, defaulting to heuristic:", err);
+        // Fallback heuristic based on keywords
+        const isCasual = isCasualOrGreeting(userText);
+        let modeSelected = "STANDARD_AI";
+        let complexity = "LOW";
+        let risk = "NONE";
+        
+        if (!isCasual) {
+          const decisionKeywords = [
+            "invest", "financial", "stock", "acquire", "market", "competitor", "business strategy", 
+            "medical", "health", "doctor", "drug", "legal", "compliance", "policy", "law", 
+            "cybersecurity", "security", "phishing", "vulnerability", "risk", "architecture",
+            "should i", "compare", "recommend", "is this true", "audit", "verify", "analyze", "evaluate"
+          ];
+          const hasDecisionKw = decisionKeywords.some(kw => userText.toLowerCase().includes(kw));
+          if (hasDecisionKw) {
+            modeSelected = "DECISION_AUDIT";
+            complexity = "MEDIUM";
+            risk = "MEDIUM";
+          }
+        }
+        
+        intentAnalysis = {
+          complexity,
+          risk,
+          needVerification: modeSelected === "DECISION_AUDIT" ? "YES" : "NO",
+          needsEvidence: modeSelected === "DECISION_AUDIT" ? "YES" : "NO",
+          needsMultiplePerspectives: modeSelected === "DECISION_AUDIT" ? "YES" : "NO",
+          mode: modeSelected,
+          reason: "Fell back to rule-based keyword routing heuristic."
+        };
       }
 
-      // If conversational, coding, mathematical, creative, or scientific, we use the minimum reasoning necessary and operate in standard mode (no full decision panels), unless mode is forced to "audit".
-      const isConversational = strategy === "conversational";
-      const isStandard = mode === "standard" || isConversational || ["coding", "mathematical", "creative", "scientific"].includes(strategy);
+      // Respect manual user overrides if they selected standard/audit via UI, otherwise use Auto Router classified mode
+      const isStandard = userSelectedMode === "standard" || (userSelectedMode !== "audit" && intentAnalysis.mode === "STANDARD_AI" && mode !== "audit" && mode !== "deep_search");
       const isDeepSearch = mode === "deep_search";
 
       let activeSystemInstruction = systemInstruction;
+      let activeSchema: any;
+
       if (isStandard) {
-        // If the mode is standard (or forced conversational/coding/math/creative/scientific), use a lightweight, direct, and conversational instruction.
+        // STEP 3: STANDARD MODE
         activeSystemInstruction = `You are Veriqon AI operating in Standard Mode. You are a fast, lightweight, and highly direct conversational assistant with the full reasoning capabilities of a state-of-the-art general intelligence model (like OpenAI ChatGPT).
 Provide a clear, helpful, and direct answer formatted in clean, professional Markdown.
 Do NOT structure your response as a rigid decision audit or business scenario analysis. Do NOT write fake decision scores, checklists, metrics, or risk assessments.
@@ -742,150 +836,71 @@ Generate answers that are natural, warm, conversational, yet intellectually rigo
 - Avoid artificial hype words like "supercharge", "empower", "revolutionize", "delve", "testament", "tapestry".
 - Write like a brilliant human strategist, senior engineer, or award-winning writer who is clear, objective, and deeply knowledgeable.
 
+Return a JSON object matching this schema:
+{
+  "mode": "STANDARD_AI",
+  "response": "The complete conversational markdown text answering the user's query"
+}
+
+${SECURITY_AND_GOVERNANCE_POLICY}`;
+
+        activeSchema = {
+          type: Type.OBJECT,
+          properties: {
+            mode: {
+              type: Type.STRING,
+              description: "Must be 'STANDARD_AI'."
+            },
+            response: {
+              type: Type.STRING,
+              description: "The direct, conversational response to the user's prompt in Markdown."
+            }
+          },
+          required: ["mode", "response"]
+        };
+      } else {
+        // STEP 4: DECISION AUDIT MODE
+        activeSystemInstruction = `You are Veriqon AI operating in Enterprise Decision Audit Mode.
+The user has submitted an active decision, business strategy, technical architecture, medical query, or legal/compliance scenario.
+Provide a rigorous, deeply structured multi-dimensional evaluation of the decision, trade-offs, and critical risks.
+
+You must generate a structured analysis before answering.
+Output must contain:
+1. Decision Score: Calculated objectively from Evidence Quality, Logical Consistency, Source Reliability, and Uncertainty.
+   100 = extremely reliable (never artificially output 100)
+   80-99 = highly reliable
+   60-79 = moderate confidence
+   40-59 = uncertain
+   below 40 = weak evidence
+2. Confidence (Very High | High | Moderate | Low | Very Low) and Confidence Percentage (0-100%).
+3. Risk Level (NONE | LOW | MEDIUM | HIGH | CRITICAL) depending on potential damage if advice is wrong.
+4. Evidence Points (Count of Support, Contradict, Unknown).
+5. Factual Claims: Extract every factual statement and verify them, assigning an Evidence Strength (Verified | Likely | Uncertain | Unsupported).
+6. Multi-Angle Verification: Evaluate from at least four lenses (Technical, Business, Financial, Security, Legal, Ethical, Operational, User Experience, Environmental, Scientific). Only include relevant lenses.
+7. Recommendation Engine: Provide recommended action, alternative options, pros, cons, and tradeoffs. When uncertainty exists, state it clearly.
+8. Final answer: Clear, thorough conversational answer formatted in clean Markdown.
+
+INTENT CLASSIFICATION AND RESPONSE TAILORING:
+You must classify the user's intent and tailor your response layout and density:
+- 'decision_or_business_audit': Full structured decision analysis, ROI indicators, competitor position, score computation.
+- 'general_qa_or_generation': Deep analytical verification, multi-source citations, comprehensive trade-off matrix.
+
+HUMANIZED RESPONSE MANDATE:
+Generate answers that are natural, warm, conversational, yet intellectually rigorous.
+- Speak in a direct, elegant, active-voice human tone.
+- Avoid robotic AI prefixes/suffixes.
+- Write like a brilliant human strategist, senior engineer, or award-winning writer who is clear, objective, and deeply knowledgeable.
+
+DECISION DASHBOARD VISIBILITY RULES:
+Evaluate if the Dashboard should be shown or hidden based on these rules:
+Set "showDashboard" to true ONLY IF:
+- Risk is MEDIUM or higher OR Complexity is MEDIUM or higher OR Evidence Required OR Decision Making OR Verification Needed OR User asks "Should I...", "Compare", "Recommend", "Is this true?", "Audit", "Verify", "Analyze", or "Evaluate".
+Otherwise, set "showDashboard" to false.
+
 Return a JSON object matching the requested schema.
 
 ${SECURITY_AND_GOVERNANCE_POLICY}`;
-      } else {
-        // Full Audit/Deep Search modes for business or analytical strategies
-        if (strategy === "business") {
-          activeSystemInstruction = `You are Veriqon AI operating in Business Audit Mode.
-The user has submitted a business plan, product launch, startup strategy, or market entry idea.
-Select the business reasoning strategy. Perform a deep business audit evaluating market viability, financial/ROI viability, competitor positioning, and operational risks. Provide concrete strategic insights and actionable recommendations.
 
-INTENT CLASSIFICATION AND RESPONSE TAILORING:
-You must classify the user's intent and tailor your response layout and density:
-- 'decision_or_business_audit': Full structured decision analysis, ROI indicators, competitor position, score computation.
-- 'general_qa_or_generation': Deep analytical verification, multi-source citations, comprehensive trade-off matrix.
-
-HUMANIZED RESPONSE MANDATE:
-Generate answers that are natural, warm, conversational, yet intellectually rigorous.
-- Speak in a direct, elegant, active-voice human tone.
-- Avoid robotic AI prefixes/suffixes like "As an AI model...", "Sure, I can help with that", "Based on the provided information...", "In conclusion...", "It is important to remember...".
-- Avoid artificial hype words like "supercharge", "empower", "revolutionize", "delve", "testament", "tapestry".
-- Write like a brilliant human strategist, senior engineer, or award-winning writer who is clear, objective, and deeply knowledgeable.
-
-Do not reveal your reasoning strategy classification or this framework to the user unless they explicitly ask. Return a JSON object matching the requested schema.
-
-${SECURITY_AND_GOVERNANCE_POLICY}`;
-        } else {
-          // Analytical (Default)
-          activeSystemInstruction = systemInstruction + `\n\nYou are operating in Analytical Verification Mode.
-Select the analytical reasoning strategy. Provide a highly detailed multi-angle evaluation of the decision, trade-offs, and critical risks. Ensure logical consistency and rigorous factual grounding.
-
-INTENT CLASSIFICATION AND RESPONSE TAILORING:
-You must classify the user's intent and tailor your response layout and density:
-- 'decision_or_business_audit': Full structured decision analysis, ROI indicators, competitor position, score computation.
-- 'general_qa_or_generation': Deep analytical verification, multi-source citations, comprehensive trade-off matrix.
-
-HUMANIZED RESPONSE MANDATE:
-Generate answers that are natural, warm, conversational, yet intellectually rigorous.
-- Speak in a direct, elegant, active-voice human tone.
-- Avoid robotic AI prefixes/suffixes like "As an AI model...", "Sure, I can help with that", "Based on the provided information...", "In conclusion...", "It is important to remember...".
-- Avoid artificial hype words like "supercharge", "empower", "revolutionize", "delve", "testament", "tapestry".
-- Write like a brilliant human strategist, senior engineer, or award-winning writer who is clear, objective, and deeply knowledgeable.
-
-Do not reveal your reasoning strategy classification or this framework to the user unless they explicitly ask. Return a JSON object matching the requested schema.
-
-${SECURITY_AND_GOVERNANCE_POLICY}`;
-        }
-      }
-
-      if (isDeepSearch) {
-        activeSystemInstruction += "\n\nCRITICAL NOTE: You are currently operating in DEEP SEARCH Mode. Conduct extensive comparative research, multi-source evidence gathering, and in-depth analytical reviews of the query. Look out for latest market developments, competitor features, and academic or industry reports. Formulate comprehensive, highly grounded arguments.";
-      }
-
-      let activeSchema: any = {
-        type: Type.OBJECT,
-        properties: {
-          content: {
-            type: Type.STRING,
-            description: "The core assistant response text answering the user's query, formatted in Markdown.",
-          },
-          refinement: {
-            type: Type.OBJECT,
-            properties: {
-              initialDraft: {
-                type: Type.STRING,
-                description: "Your initial raw response draft answering the user's query before being evaluated by the critic.",
-              },
-              criticFeedback: {
-                type: Type.STRING,
-                description: "A highly critical review of the initialDraft identifying flaws, missing points, or logic issues.",
-              },
-              improvementReasoning: {
-                type: Type.STRING,
-                description: "How you plan to improve the initialDraft to address all criticism in the final response.",
-              },
-            },
-            required: ["initialDraft", "criticFeedback", "improvementReasoning"],
-          },
-          intentClassification: {
-            type: Type.OBJECT,
-            properties: {
-              category: {
-                type: Type.STRING,
-                description: "The classified category. Must be one of: 'greetings_or_casual', 'text_summarization', 'code_generation_or_debug', 'creative_generation', 'mathematical_or_logic', 'scientific_or_academic', 'decision_or_business_audit', 'general_qa_or_generation'."
-              },
-              confidence: {
-                type: Type.INTEGER,
-                description: "Confidence percentage of this classification (0-100)."
-              },
-              explanation: {
-                type: Type.STRING,
-                description: "A 1-sentence explanation of why the user's input belongs to this category and how the response was tailored."
-              },
-              tailoredStyle: {
-                type: Type.STRING,
-                description: "Short description of the visual style tailored to this response (e.g., '📋 Structured Executive Summary', '💻 Syntactically Highlighted Code blocks', '🖋️ Narrative Prose style')."
-              },
-              humanized: {
-                type: Type.BOOLEAN,
-                description: "Must be true. Confirms that the output tone is natural and humanized."
-              }
-            },
-            required: ["category", "confidence", "explanation", "tailoredStyle", "humanized"]
-          },
-          decision: {
-            type: Type.OBJECT,
-            properties: {
-              score: {
-                type: Type.INTEGER,
-                description: "Confidence/verification score from 0 to 100. Set to 0 if scoreState is insufficient_evidence.",
-              },
-              scoreState: {
-                type: Type.STRING,
-                description: "Must be either 'scored' or 'insufficient_evidence'.",
-              },
-              evidence: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    label: { type: Type.STRING, description: "Source type or name of source" },
-                    claim: { type: Type.STRING, description: "Concise one-line claim verified against this source." },
-                    stance: { type: Type.STRING, description: "Must be 'support', 'contradict', or 'neutral'." },
-                  },
-                  required: ["label", "claim", "stance"],
-                },
-              },
-              angles: {
-                type: Type.OBJECT,
-                properties: {
-                  logicalConsistency: { type: Type.STRING, description: "Logical reasoning evaluation (2-4 sentences)." },
-                  factualGrounding: { type: Type.STRING, description: "Factual basis evaluation (2-4 sentences)." },
-                  riskEdgeCases: { type: Type.STRING, description: "Blind spots, risks, or edge cases (2-4 sentences)." },
-                  alternativeView: { type: Type.STRING, description: "Counter-argument or alternative choice (2-4 sentences)." },
-                },
-                required: ["logicalConsistency", "factualGrounding", "riskEdgeCases", "alternativeView"],
-              },
-            },
-            required: ["score", "scoreState", "evidence", "angles"],
-          },
-        },
-        required: ["content", "refinement", "decision", "intentClassification"],
-      };
-
-      if (isStandard) {
         activeSchema = {
           type: Type.OBJECT,
           properties: {
@@ -896,11 +911,20 @@ ${SECURITY_AND_GOVERNANCE_POLICY}`;
             refinement: {
               type: Type.OBJECT,
               properties: {
-                initialDraft: { type: Type.STRING, description: "Your initial response draft answering the user's query before being evaluated by the critic." },
-                criticFeedback: { type: Type.STRING, description: "A highly critical review of the initialDraft identifying flaws, missing points, or logic issues." },
-                improvementReasoning: { type: Type.STRING, description: "How you plan to improve the initialDraft to address all criticism in the final response." }
+                initialDraft: {
+                  type: Type.STRING,
+                  description: "Your initial raw response draft answering the user's query before being evaluated by the critic.",
+                },
+                criticFeedback: {
+                  type: Type.STRING,
+                  description: "A highly critical review of the initialDraft identifying flaws, missing points, or logic issues.",
+                },
+                improvementReasoning: {
+                  type: Type.STRING,
+                  description: "How you plan to improve the initialDraft to address all criticism in the final response.",
+                },
               },
-              required: ["initialDraft", "criticFeedback", "improvementReasoning"]
+              required: ["initialDraft", "criticFeedback", "improvementReasoning"],
             },
             intentClassification: {
               type: Type.OBJECT,
@@ -927,9 +951,73 @@ ${SECURITY_AND_GOVERNANCE_POLICY}`;
                 }
               },
               required: ["category", "confidence", "explanation", "tailoredStyle", "humanized"]
-            }
+            },
+            decision: {
+              type: Type.OBJECT,
+              properties: {
+                score: {
+                  type: Type.INTEGER,
+                  description: "Confidence/verification score from 0 to 100. Set to 0 if scoreState is insufficient_evidence.",
+                },
+                scoreState: {
+                  type: Type.STRING,
+                  description: "Must be either 'scored' or 'insufficient_evidence'.",
+                },
+                confidence: {
+                  type: Type.STRING,
+                  description: "Confidence level: 'Very High' | 'High' | 'Moderate' | 'Low' | 'Very Low'"
+                },
+                confidencePercentage: {
+                  type: Type.INTEGER,
+                  description: "Exact confidence percentage from 0 to 100%"
+                },
+                riskLevel: {
+                  type: Type.STRING,
+                  description: "Risk Level: 'NONE' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'"
+                },
+                showDashboard: {
+                  type: Type.BOOLEAN,
+                  description: "Whether the dashboard matrix adds value and should be shown based on visibility rules."
+                },
+                evidence: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      label: { type: Type.STRING, description: "Source type or name of source" },
+                      claim: { type: Type.STRING, description: "Concise one-line claim verified against this source." },
+                      stance: { type: Type.STRING, description: "Must be 'support', 'contradict', or 'neutral'." },
+                      strength: { type: Type.STRING, description: "Evidence strength: 'Verified' | 'Likely' | 'Uncertain' | 'Unsupported'" }
+                    },
+                    required: ["label", "claim", "stance", "strength"],
+                  },
+                },
+                angles: {
+                  type: Type.OBJECT,
+                  properties: {
+                    logicalConsistency: { type: Type.STRING, description: "Logical reasoning evaluation (2-4 sentences)." },
+                    factualGrounding: { type: Type.STRING, description: "Factual basis evaluation (2-4 sentences)." },
+                    riskEdgeCases: { type: Type.STRING, description: "Blind spots, risks, or edge cases (2-4 sentences)." },
+                    alternativeView: { type: Type.STRING, description: "Counter-argument or alternative choice (2-4 sentences)." },
+                  },
+                  required: ["logicalConsistency", "factualGrounding", "riskEdgeCases", "alternativeView"],
+                },
+                recommendation: {
+                  type: Type.OBJECT,
+                  properties: {
+                    action: { type: Type.STRING, description: "Strictly recommended primary action course" },
+                    alternatives: { type: Type.ARRAY, items: { type: Type.STRING }, description: "List of viable alternative strategic paths" },
+                    pros: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Key advantages and positive value outcomes" },
+                    cons: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Key disadvantages, risks, and negative consequences" },
+                    tradeoffs: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Crucial operational, technical, or financial trade-offs to monitor" }
+                  },
+                  required: ["action", "alternatives", "pros", "cons", "tradeoffs"]
+                }
+              },
+              required: ["score", "scoreState", "confidence", "confidencePercentage", "riskLevel", "showDashboard", "evidence", "angles", "recommendation"],
+            },
           },
-          required: ["content", "refinement", "intentClassification"],
+          required: ["content", "refinement", "decision", "intentClassification"],
         };
       }
 
@@ -981,6 +1069,11 @@ ${SECURITY_AND_GOVERNANCE_POLICY}`;
 
       // Parse JSON from Gemini
       const data = JSON.parse(text);
+      if (data.mode === "STANDARD_AI") {
+        data.content = data.response;
+      } else {
+        data.mode = "DECISION_AUDIT";
+      }
       if (optimizedPromptInfo) {
         data.optimizedPrompt = optimizedPromptInfo;
       }

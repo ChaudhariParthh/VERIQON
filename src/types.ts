@@ -10,6 +10,7 @@ export interface Evidence {
   label: string;
   claim: string;
   stance: "support" | "contradict" | "neutral";
+  strength?: string;
 }
 
 export interface VerificationAngles {
@@ -24,6 +25,17 @@ export interface DecisionVerification {
   scoreState: "scored" | "insufficient_evidence";
   evidence: Evidence[];
   angles: VerificationAngles;
+  confidence?: string;
+  confidencePercentage?: number;
+  riskLevel?: string;
+  showDashboard?: boolean;
+  recommendation?: {
+    action: string;
+    alternatives: string[];
+    pros: string[];
+    cons: string[];
+    tradeoffs: string[];
+  };
 }
 
 export interface IntentClassification {
