@@ -7,7 +7,8 @@
 The assistant integrates intelligent web search, multimodal AI capabilities, and explainable AI features to provide transparent and efficient responses. A key feature is its **Decision Audit Mode**, which enhances trust by displaying the AI's **confidence level**, **risk level**, and the **supporting evidence** behind each response. It also includes usability-focused enhancements such as **chat deletion**, allowing users to remove individual conversations, and a **`clear` command** in the prompt bar that instantly clears the chat context for a fresh interaction.
 
 ---
-
+### Demonstration Video : https://drive.google.com/file/d/1VrPxKyWHM_8eTBlVOfSaU-cVrsX0OEEt/view?usp=sharing
+---
 ## Table of Contents
 - [Project Title](#project-title)
 - [About the Project](#about-the-project)
