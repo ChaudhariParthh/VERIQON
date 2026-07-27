@@ -9,6 +9,9 @@ The assistant integrates intelligent web search, multimodal AI capabilities, and
 ---
 ### Demonstration Video : https://drive.google.com/file/d/1VrPxKyWHM_8eTBlVOfSaU-cVrsX0OEEt/view?usp=sharing
 ---
+<img width="1917" height="891" alt="Screenshot 2026-07-27 200059" src="https://github.com/user-attachments/assets/59b9021c-7344-42ff-a10e-0292954a2b24" />
+
+---
 ## Table of Contents
 - [Project Title](#project-title)
 - [About the Project](#about-the-project)
