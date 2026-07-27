@@ -2,7 +2,7 @@
 
 > **Trust Every Decision** — Enterprise-grade decision verification and auditing platform powered by Google Gemini AI
 
-**Veriqon-AI** is a **no-code AI assistant** built using **Google AI Studio** through advanced prompt engineering and AI system design. Developed by applying the knowledge gained from the **Google AI Professional Certification**, particularly the **AI in App Building** module, it leverages the **Gemini 3.5 Flash** model to deliver fast, reliable, and intelligent AI interactions.
+**Veriqon-AI** is a **no-code AI assistant** built using **Google AI Studio** through prompt engineering and AI system design. Developed by applying the knowledge gained from the **Google AI Professional Certification**, particularly the **AI in App Building** module, it leverages the **Gemini 3.5 Flash** model to deliver fast, reliable, and intelligent AI interactions.
 
 The assistant integrates intelligent web search, multimodal AI capabilities, and explainable AI features to provide transparent and efficient responses. A key feature is its **Decision Audit Mode**, which enhances trust by displaying the AI's **confidence level**, **risk level**, and the **supporting evidence** behind each response. It also includes usability-focused enhancements such as **chat deletion**, allowing users to remove individual conversations, and a **`clear` command** in the prompt bar that instantly clears the chat context for a fresh interaction.
 
@@ -459,8 +459,8 @@ This project is open-source and available under the **MIT License**. See the LIC
 - Commercial use is permitted
 
 ---
-### Google AI Professional Certificate
-<img width="977" height="765" alt="image" src="https://github.com/user-attachments/assets/cea1c913-71c5-47f4-999a-e3b00823452a" />
+### AI in App Building
+<img width="600" height="600" alt="image" src="https://github.com/user-attachments/assets/cea1c913-71c5-47f4-999a-e3b00823452a" />
 
 
 ## Author
@@ -471,7 +471,7 @@ Artificial Intelligence & Data Science Engineer
 
 - GitHub: [@ChaudhariParthh](https://github.com/ChaudhariParthh)
 - Email: Contact via GitHub profile
-- LinkedIn: [Parth Chaudhari](https://linkedin.com/chaudhariparthh)
+- LinkedIn: [Parth Chaudhari](https://linkedin.com/Chaudhariparthh)
 
 ### About
 
